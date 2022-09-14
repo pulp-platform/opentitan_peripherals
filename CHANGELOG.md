@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
-## 0.1.0 - 2022-08-27
+## 0.1.0 - 2022-09-14
 ### Added
 - Add selected OpenTitan peripherals as Bender import.
 - Add existing patches from Snitch repository.
