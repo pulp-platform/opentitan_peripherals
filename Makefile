@@ -12,7 +12,7 @@ clean:
 	rm -f Bender.lock
 
 bender:
-	curl --proto '=https' --tlsv1.2 -sSf https://pulp-platform.github.io/bender/init | bash -s -- 0.26.0
+	curl --proto '=https' --tlsv1.2 -sSf https://pulp-platform.github.io/bender/init | bash -s -- 0.27.0
 	touch bender
 
 # Generate peripheral RTL
@@ -32,9 +32,9 @@ check_generated:
 	$(MAKE) -B otp
 	$(CHECK_CLEAN)
 
-check_import: bender
-	./bender import --refetch
+check_vendor: bender
+	./bender vendor init
 	$(CHECK_CLEAN)
 
 check: check_generated
-check: check_import
+check: check_vendor
