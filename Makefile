@@ -33,7 +33,7 @@ check_generated:
 	$(CHECK_CLEAN)
 
 check_vendor: bender
-	./bender vendor --refetch
+	./bender vendor init
 	$(CHECK_CLEAN)
 
 check: check_generated
