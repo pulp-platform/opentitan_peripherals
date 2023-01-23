@@ -7,7 +7,7 @@ A selection of peripherals from lowRISC's [OpenTitan](https://github.com/lowRISC
 * Dependency and IP management using [Bender](https://github.com/pulp-platform/bender).
 * Minor functional fixes and changes.
 
-This repository uses Bender's `import` command to fully include the remote code in `src` and apply the patches included in `patches`. The IP RTL is pregenerated in its standard configuration, but can be reconfigured in the including project.
+This repository uses Bender's `vendor` command to fully include the remote code in `src` and apply the patches included in `patches`. The IP RTL is pregenerated in its standard configuration, but can be reconfigured in the including project.
 
 ## Reconfiguring IPs
 
@@ -32,13 +32,13 @@ all: otp
 After making uncommitted changes to the forked IPs, you can generate a patch for them with:
 
 ```
-bender import --gen_patch
+bender vendor --gen_patch
 ```
 
 Then rename the generated file to `<next_index>_<patch_description>.patch`. To verify correct patch application:
 
 ```
-make check_import
+make check_vendor
 ```
 
 ## Licensing

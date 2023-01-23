@@ -29,8 +29,8 @@ jobs:
       - name: Check generated sources
         run: make check_generated
 
-  check-import:
-    name: Check imported sources
+  check-vendor:
+    name: Check vendored sources
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -40,8 +40,8 @@ jobs:
           cache: pip
       - name: Python Requirements
         run: pip install -r requirements.txt
-      - name: Check import
-        run: make check_import
+      - name: Check vendor
+        run: make check_vendor
 
   check-license:
     name: Check license
