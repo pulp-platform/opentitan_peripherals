@@ -32,10 +32,10 @@ all: otp
 After making uncommitted changes to the forked IPs, you can generate a patch for them with:
 
 ```
-bender vendor --gen_patch
+bender vendor patch
 ```
 
-Then rename the generated file to `<next_index>_<patch_description>.patch`. To verify correct patch application:
+You will be prompted to name the patch commits. To verify correct patch application:
 
 ```
 make check_vendor
