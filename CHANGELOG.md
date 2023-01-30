@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## 0.2.1 - 2023-01-30
+### Fixed
+- Eliminate duplicate entry in Bender manifest.
+
 ## 0.2.0 - 2023-01-23
 ### Added
 - Fix some bugs in SPI host.
