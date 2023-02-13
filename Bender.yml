@@ -14,15 +14,18 @@ dependencies:
 
 vendor_package:
   - name: lowrisc_opentitan
-    target_dir: src
-    upstream: { git: "https://github.com/lowRISC/opentitan.git", rev: "726718a6de32aa047a4064e02e7b619699f054ed" }
+    target_dir: "."
+    upstream: { git: "https://github.com/lowRISC/opentitan.git", rev: "9f497f6339b4484fc5b7e5dc5d4bc63f55ec3c35" }
     patch_dir: "patches"
     mapping:
-      - {from: 'hw/ip/prim', to: 'prim', patch_dir: 'prim'}
-      - {from: 'hw/ip/gpio', to: 'gpio', patch_dir: 'gpio'}
-      - {from: 'hw/ip/i2c', to: 'i2c', patch_dir: 'i2c'}
-      - {from: 'hw/ip/spi_host', to: 'spi_host', patch_dir: 'spi_host'}
-      - {from: 'hw/ip/rv_plic', to: 'rv_plic', patch_dir: 'rv_plic'}
+      - {from: 'hw/ip/prim', to: 'src/prim', patch_dir: 'prim'}
+      - {from: 'hw/ip/gpio', to: 'src/gpio', patch_dir: 'gpio'}
+      - {from: 'hw/ip/i2c', to: 'src/i2c', patch_dir: 'i2c'}
+      - {from: 'hw/ip/spi_host', to: 'src/spi_host', patch_dir: 'spi_host'}
+      - {from: 'hw/ip_templates/rv_plic/data', to: 'src/rv_plic/tpl/rv_plic/data', patch_dir: 'rv_plic/tpl/data'}
+      - {from: 'hw/ip_templates/rv_plic/rtl', to: 'src/rv_plic/tpl/rv_plic/rtl', patch_dir: 'rv_plic/tpl/rtl'}
+      - {from: 'util/ipgen', to: 'util/ipgen', patch_dir: 'ipgen'}
+      - {from: 'util/ipgen.py', to: 'util/ipgen.py'}
     exclude_from_upstream:
       - "*.core"
       - "*doc"
@@ -32,6 +35,7 @@ vendor_package:
       - "*.prj.hjson"
       - "*_testplan.hjson"
       - "*README.md"
+      - "*BUILD"
       # We do not need primitive generation
       - "hw/ip/prim/util"
       # Exclude various primitives to reduce clutter (keep in sync with sources)
@@ -39,6 +43,8 @@ vendor_package:
       - "hw/ip/prim/rtl/prim_[!fipsu]*"
       - "hw/ip/prim/rtl/prim_secded*"
       - "hw/ip/prim/rtl/prim_subreg*"
+      # Exclude ipgen tests
+      - "util/ipgen/tests"
 
 sources:
   ### lowRISC Primitives ###
