@@ -3,17 +3,33 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 <% import math %>\
-# RV_PLIC register template
+# ${(module_instance_name).upper()} register template
 #
 # Parameter (given by Python tool)
 #  - src:    Number of Interrupt Sources
 #  - target: Number of Targets that handle interrupt requests
 #  - prio:   Max value of interrupt priorities
+#  - module_instance_name: Module instance name.
 {
-  name: "RV_PLIC",
-  clock_primary: "clk_i",
+  name:               "${module_instance_name}",
+  design_spec:        "../doc",
+  dv_doc:             "../doc/dv",
+  hw_checklist:       "../doc/checklist",
+  sw_checklist:       "/sw/device/lib/dif/dif_${module_instance_name.lower()}",
+  revisions: [
+    {
+      version:            "1.0",
+      life_stage:         "L1",
+      design_stage:       "D3",
+      verification_stage: "V2",
+      dif_stage:          "S2",
+      commit_id:          "",
+      notes:              "Use FPV to perform block level verification.",
+    }
+  ],
+  clocking: [{clock: "clk_i", reset: "rst_ni"}],
   bus_interfaces: [
-    { protocol: "reg_iface", direction: "device" }
+    { protocol: "tlul", direction: "device" }
   ],
 
   param_list: [
@@ -73,6 +89,12 @@
     },
   ]
 
+  countermeasures: [
+    { name: "BUS.INTEGRITY",
+      desc: "End-to-end bus integrity scheme."
+    }
+  ]
+
   regwidth: "32",
   registers: [
 % for i in range(src):
@@ -83,14 +105,14 @@
       fields: [
         { bits: "${(prio).bit_length()-1}:0" }
       ],
-    },
+    }
 % endfor
-    { skipto: "0x1000" }
+    { skipto: "0x00001000" }
     { multireg: {
         name: "IP",
         desc: "Interrupt Pending",
         count: "NumSrc",
-        cname: "RV_PLIC",
+        cname: "${(module_instance_name).upper()}",
         swaccess: "ro",
         hwaccess: "hwo",
         fields: [
@@ -100,25 +122,13 @@
                "excl:CsrNonInitTests:CsrExclCheck"],
       }
     },
-    { multireg: {
-        name: "LE",
-        desc: "Interrupt Source mode. 0: Level, 1: Edge-triggered",
-        count: "NumSrc",
-        cname: "RV_PLIC",
-        swaccess: "rw",
-        hwaccess: "hro",
-        fields: [
-          { bits: "0", name: "LE", desc: "L0E1" }
-        ],
-      }
-    },
 % for i in range(target):
-    { skipto: "${0x2000 + i * 0x80}" }
+    { skipto: "${"0x{:x}".format(0x00002000 + i * 0x100)}" }
     { multireg: {
         name: "IE${i}",
         desc: "Interrupt Enable for Target ${i}",
         count: "NumSrc",
-        cname: "RV_PLIC",
+        cname: "${(module_instance_name).upper()}",
         swaccess: "rw",
         hwaccess: "hro",
         fields: [
@@ -128,7 +138,7 @@
     }
 % endfor
 % for i in range(target):
-    { skipto: "${0x200000 + 0x1000 * i}" }
+    { skipto: "${"0x{:x}".format(0x00200000  + i * 0x1000)}" }
     { name: "THRESHOLD${i}",
       desc: "Threshold of priority for Target ${i}",
       swaccess: "rw",
@@ -151,6 +161,9 @@
       tags: [// CC register value is related to IP
              "excl:CsrNonInitTests:CsrExclCheck"],
     }
+% endfor
+  { skipto: "0x4000000" }
+% for i in range(target):
     { name: "MSIP${i}",
       desc: '''msip for Hart ${i}.
       Write 1 to here asserts software interrupt for Hart msip_o[${i}], write 0 to clear.''',
@@ -163,7 +176,7 @@
       ],
     }
 % endfor
-  { skipto: "${0x200000 + target*0x1000  | x}" }
+  { skipto: "0x4004000" }
   { name: "ALERT_TEST",
       desc: '''Alert Test Register.''',
       swaccess: "wo",

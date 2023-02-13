@@ -4,23 +4,28 @@
 //
 // General Purpose Input/Output module
 
-`include "common_cells/assertions.svh"
+`include "prim_assert.sv"
 
 module gpio
   import gpio_reg_pkg::*;
 #(
-  parameter type reg_req_t = logic,
-  parameter type reg_rsp_t = logic
+  parameter logic [NumAlerts-1:0] AlertAsyncOn = {NumAlerts{1'b1}},
+  // This parameter instantiates 2-stage synchronizers on all GPIO inputs.
+  parameter bit GpioAsyncOn = 1
 ) (
   input clk_i,
   input rst_ni,
 
-  // Below Register interface can be changed
-  input  reg_req_t reg_req_i,
-  output reg_rsp_t reg_rsp_o,
+  // Bus interface
+  input  tlul_pkg::tl_h2d_t tl_i,
+  output tlul_pkg::tl_d2h_t tl_o,
 
   // Interrupts
   output logic [31:0] intr_gpio_o,
+
+  // Alerts
+  input  prim_alert_pkg::alert_rx_t [NumAlerts-1:0] alert_rx_i,
+  output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
 
   // GPIOs
   input        [31:0] cio_gpio_i,
@@ -37,15 +42,18 @@ module gpio
   logic [31:0] cio_gpio_en_q;
 
   // possibly filter the input based upon register configuration
-
   logic [31:0] data_in_d;
-
+  localparam int unsigned CntWidth = 4;
   for (genvar i = 0 ; i < 32 ; i++) begin : gen_filter
-    prim_filter_ctr #(.Cycles(16)) filter (
+    prim_filter_ctr #(
+      .AsyncOn(GpioAsyncOn),
+      .CntWidth(CntWidth)
+    ) u_filter (
       .clk_i,
       .rst_ni,
       .enable_i(reg2hw.ctrl_en_input_filter.q[i]),
       .filter_i(cio_gpio_i[i]),
+      .thresh_i({CntWidth{1'b1}}),
       .filter_o(data_in_d[i])
     );
   end
@@ -136,20 +144,42 @@ module gpio
                                event_intr_actlow |
                                event_intr_acthigh;
 
+  // Alerts
+  logic [NumAlerts-1:0] alert_test, alerts;
+  assign alert_test = {
+    reg2hw.alert_test.q &
+    reg2hw.alert_test.qe
+  };
+
+  for (genvar i = 0; i < NumAlerts; i++) begin : gen_alert_tx
+    prim_alert_sender #(
+      .AsyncOn(AlertAsyncOn[i]),
+      .IsFatal(1'b1)
+    ) u_prim_alert_sender (
+      .clk_i,
+      .rst_ni,
+      .alert_test_i  ( alert_test[i] ),
+      .alert_req_i   ( alerts[0]     ),
+      .alert_ack_o   (               ),
+      .alert_state_o (               ),
+      .alert_rx_i    ( alert_rx_i[i] ),
+      .alert_tx_o    ( alert_tx_o[i] )
+    );
+  end
+
   // Register module
-  gpio_reg_top #(
-    .reg_req_t (reg_req_t),
-    .reg_rsp_t (reg_rsp_t)
-  ) u_reg (
+  gpio_reg_top u_reg (
     .clk_i,
     .rst_ni,
 
-    .reg_req_i,
-    .reg_rsp_o,
+    .tl_i,
+    .tl_o,
 
     .reg2hw,
     .hw2reg,
 
+    // SEC_CM: BUS.INTEGRITY
+    .intg_err_o (alerts[0]),
     .devmode_i  (1'b1)
   );
 
@@ -157,5 +187,8 @@ module gpio
   `ASSERT_KNOWN(IntrGpioKnown, intr_gpio_o)
   `ASSERT_KNOWN(CioGpioEnOKnown, cio_gpio_en_o)
   `ASSERT_KNOWN(CioGpioOKnown, cio_gpio_o)
+  `ASSERT_KNOWN(AlertsKnown_A, alert_tx_o)
 
+  // Alert assertions for reg_we onehot check
+  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
 endmodule

@@ -4,7 +4,8 @@
 //
 // Description: I2C core module
 
-module  i2c_core #(
+module i2c_core import i2c_pkg::*;
+#(
   parameter int                    FifoDepth = 64
 ) (
   input                            clk_i,
@@ -18,8 +19,8 @@ module  i2c_core #(
   input                            sda_i,
   output logic                     sda_o,
 
-  output logic                     intr_fmt_watermark_o,
-  output logic                     intr_rx_watermark_o,
+  output logic                     intr_fmt_threshold_o,
+  output logic                     intr_rx_threshold_o,
   output logic                     intr_fmt_overflow_o,
   output logic                     intr_rx_overflow_o,
   output logic                     intr_nak_o,
@@ -27,12 +28,11 @@ module  i2c_core #(
   output logic                     intr_sda_interference_o,
   output logic                     intr_stretch_timeout_o,
   output logic                     intr_sda_unstable_o,
-  output logic                     intr_trans_complete_o,
-  output logic                     intr_tx_empty_o,
-  output logic                     intr_tx_nonempty_o,
+  output logic                     intr_cmd_complete_o,
+  output logic                     intr_tx_stretch_o,
   output logic                     intr_tx_overflow_o,
-  output logic                     intr_acq_overflow_o,
-  output logic                     intr_ack_stop_o,
+  output logic                     intr_acq_full_o,
+  output logic                     intr_unexp_stop_o,
   output logic                     intr_host_timeout_o
 );
 
@@ -48,12 +48,6 @@ module  i2c_core #(
   logic [15:0] t_buf;
   logic [30:0] stretch_timeout;
   logic        timeout_enable;
-  logic        stretch_en_addr_tx;
-  logic        stretch_en_addr_acq;
-  logic        stretch_stop_tx;
-  logic        stretch_stop_acq;
-  logic        stretch_stop_tx_clr;
-  logic        stretch_stop_acq_clr;
   logic [31:0] host_timeout;
 
   logic scl_sync;
@@ -61,8 +55,8 @@ module  i2c_core #(
   logic scl_out_fsm;
   logic sda_out_fsm;
 
-  logic event_fmt_watermark;
-  logic event_rx_watermark;
+  logic event_fmt_threshold;
+  logic event_rx_threshold;
   logic event_fmt_overflow;
   logic event_rx_overflow;
   logic event_nak;
@@ -70,12 +64,10 @@ module  i2c_core #(
   logic event_sda_interference;
   logic event_stretch_timeout;
   logic event_sda_unstable;
-  logic event_trans_complete;
-  logic event_tx_empty;
-  logic event_tx_nonempty;
+  logic event_cmd_complete;
+  logic event_tx_stretch;
   logic event_tx_overflow;
-  logic event_acq_overflow;
-  logic event_ack_stop;
+  logic event_unexp_stop;
   logic event_host_timeout;
 
   logic [15:0] scl_rx_val;
@@ -110,10 +102,10 @@ module  i2c_core #(
   logic        rx_fifo_rready;
   logic [7:0]  rx_fifo_rdata;
 
-  logic        fmt_watermark_d;
-  logic        fmt_watermark_q;
-  logic        rx_watermark_d;
-  logic        rx_watermark_q;
+  logic        fmt_threshold_d;
+  logic        fmt_threshold_q;
+  logic        rx_threshold_d;
+  logic        rx_threshold_q;
 
   logic        tx_fifo_wvalid;
   logic        tx_fifo_wready;
@@ -140,6 +132,7 @@ module  i2c_core #(
   logic        host_enable;
   logic        target_enable;
   logic        line_loopback;
+  logic        target_loopback;
 
   logic [6:0]  target_address0;
   logic [6:0]  target_mask0;
@@ -161,7 +154,7 @@ module  i2c_core #(
   assign hw2reg.status.hostidle.d = host_idle;
   assign hw2reg.status.targetidle.d = target_idle;
   assign hw2reg.status.rxempty.d = ~rx_fifo_rvalid;
-  assign hw2reg.rdata.d = line_loopback ? 8'hff : rx_fifo_rdata;
+  assign hw2reg.rdata.d = rx_fifo_rdata;
   assign hw2reg.fifo_status.fmtlvl.d = fmt_fifo_depth;
   assign hw2reg.fifo_status.rxlvl.d = rx_fifo_depth;
   assign hw2reg.val.scl_rx.d = scl_rx_val;
@@ -173,12 +166,8 @@ module  i2c_core #(
   assign hw2reg.status.acqempty.d = ~acq_fifo_rvalid;
   assign hw2reg.fifo_status.txlvl.d = tx_fifo_depth;
   assign hw2reg.fifo_status.acqlvl.d = acq_fifo_depth;
-  assign hw2reg.acqdata.abyte.d = line_loopback ? 8'hff : acq_fifo_rdata[7:0];
-  assign hw2reg.acqdata.signal.d = line_loopback ? 2'b11 : acq_fifo_rdata[9:8];
-  assign hw2reg.stretch_ctrl.stop_tx.d = 1'b0;
-  assign hw2reg.stretch_ctrl.stop_tx.de = stretch_stop_tx_clr;
-  assign hw2reg.stretch_ctrl.stop_acq.d = 1'b0;
-  assign hw2reg.stretch_ctrl.stop_acq.de = stretch_stop_acq_clr;
+  assign hw2reg.acqdata.abyte.d = acq_fifo_rdata[7:0];
+  assign hw2reg.acqdata.signal.d = acq_fifo_rdata[9:8];
 
   assign override = reg2hw.ovrd.txovrden;
 
@@ -188,6 +177,10 @@ module  i2c_core #(
   assign host_enable = reg2hw.ctrl.enablehost.q;
   assign target_enable = reg2hw.ctrl.enabletarget.q;
   assign line_loopback = reg2hw.ctrl.llpbk.q;
+
+  // Target loopback simply plays back whatever is received from the external host
+  // back to it.
+  assign target_loopback = target_enable & line_loopback;
 
   assign target_address0 = reg2hw.target_id.address0.q;
   assign target_mask0 = reg2hw.target_id.mask0.q;
@@ -219,11 +212,6 @@ module  i2c_core #(
   assign timeout_enable  = reg2hw.timeout_ctrl.en.q;
   assign host_timeout    = reg2hw.host_timeout_ctrl.q;
 
-  assign stretch_en_addr_tx  = reg2hw.stretch_ctrl.en_addr_tx.q;
-  assign stretch_en_addr_acq = reg2hw.stretch_ctrl.en_addr_acq.q;
-  assign stretch_stop_tx     = reg2hw.stretch_ctrl.stop_tx.q;
-  assign stretch_stop_acq    = reg2hw.stretch_ctrl.stop_acq.q;
-
   assign i2c_fifo_rxrst   = reg2hw.fifo_ctrl.rxrst.q & reg2hw.fifo_ctrl.rxrst.qe;
   assign i2c_fifo_fmtrst  = reg2hw.fifo_ctrl.fmtrst.q & reg2hw.fifo_ctrl.fmtrst.qe;
   assign i2c_fifo_rxilvl  = reg2hw.fifo_ctrl.rxilvl.q;
@@ -232,39 +220,39 @@ module  i2c_core #(
   assign i2c_fifo_txrst   = reg2hw.fifo_ctrl.txrst.q & reg2hw.fifo_ctrl.txrst.qe;
   assign i2c_fifo_acqrst  = reg2hw.fifo_ctrl.acqrst.q & reg2hw.fifo_ctrl.acqrst.qe;
 
-  always_ff @ (posedge clk_i or negedge rst_ni) begin : watermark_transition
+  always_ff @ (posedge clk_i or negedge rst_ni) begin : threshold_transition
     if (!rst_ni) begin
-      fmt_watermark_q <= 1'b1; // true by default
-      rx_watermark_q  <= 1'b0; // false by default
+      fmt_threshold_q <= 1'b1; // true by default
+      rx_threshold_q  <= 1'b0; // false by default
     end else begin
-      fmt_watermark_q <= fmt_watermark_d;
-      rx_watermark_q  <= rx_watermark_d;
+      fmt_threshold_q <= fmt_threshold_d;
+      rx_threshold_q  <= rx_threshold_d;
     end
   end
 
   always_comb begin
     unique case(i2c_fifo_fmtilvl)
-      2'h0:    fmt_watermark_d = (fmt_fifo_depth <= 7'd1);
-      2'h1:    fmt_watermark_d = (fmt_fifo_depth <= 7'd4);
-      2'h2:    fmt_watermark_d = (fmt_fifo_depth <= 7'd8);
-      default: fmt_watermark_d = (fmt_fifo_depth <= 7'd16);
+      2'h0:    fmt_threshold_d = (fmt_fifo_depth <= 7'd1);
+      2'h1:    fmt_threshold_d = (fmt_fifo_depth <= 7'd4);
+      2'h2:    fmt_threshold_d = (fmt_fifo_depth <= 7'd8);
+      default: fmt_threshold_d = (fmt_fifo_depth <= 7'd16);
     endcase
   end
 
-  assign event_fmt_watermark = fmt_watermark_d & ~fmt_watermark_q;
+  assign event_fmt_threshold = fmt_threshold_d & ~fmt_threshold_q;
 
   always_comb begin
     unique case(i2c_fifo_rxilvl)
-      3'h0:    rx_watermark_d = (rx_fifo_depth >= 7'd1);
-      3'h1:    rx_watermark_d = (rx_fifo_depth >= 7'd4);
-      3'h2:    rx_watermark_d = (rx_fifo_depth >= 7'd8);
-      3'h3:    rx_watermark_d = (rx_fifo_depth >= 7'd16);
-      3'h4:    rx_watermark_d = (rx_fifo_depth >= 7'd30);
-      default: rx_watermark_d = 1'b0;
+      3'h0:    rx_threshold_d = (rx_fifo_depth >= 7'd1);
+      3'h1:    rx_threshold_d = (rx_fifo_depth >= 7'd4);
+      3'h2:    rx_threshold_d = (rx_fifo_depth >= 7'd8);
+      3'h3:    rx_threshold_d = (rx_fifo_depth >= 7'd16);
+      3'h4:    rx_threshold_d = (rx_fifo_depth >= 7'd30);
+      default: rx_threshold_d = 1'b0;
     endcase
   end
 
-  assign event_rx_watermark = rx_watermark_d & ~rx_watermark_q;
+  assign event_rx_threshold = rx_threshold_d & ~rx_threshold_q;
 
   assign event_fmt_overflow = fmt_fifo_wvalid & ~fmt_fifo_wready;
   assign event_rx_overflow = rx_fifo_wvalid & ~rx_fifo_wready;
@@ -272,19 +260,18 @@ module  i2c_core #(
   // The fifo write enable is controlled by fbyte, start, stop, read, rcont,
   // and nakok field qe bits.
   // When all qe bits are asserted, fdata is injected into the fifo.
-  assign fmt_fifo_wvalid     = line_loopback ? 1'b1 :
-                               reg2hw.fdata.fbyte.qe &
+  assign fmt_fifo_wvalid     = reg2hw.fdata.fbyte.qe &
                                reg2hw.fdata.start.qe &
                                reg2hw.fdata.stop.qe  &
                                reg2hw.fdata.read.qe  &
                                reg2hw.fdata.rcont.qe &
                                reg2hw.fdata.nakok.qe;
-  assign fmt_fifo_wdata[7:0] = line_loopback ? rx_fifo_rdata : reg2hw.fdata.fbyte.q;
-  assign fmt_fifo_wdata[8]   = line_loopback ? 1'b0 : reg2hw.fdata.start.q;
-  assign fmt_fifo_wdata[9]   = line_loopback ? 1'b0 : reg2hw.fdata.stop.q;
-  assign fmt_fifo_wdata[10]  = line_loopback ? 1'b0 : reg2hw.fdata.read.q;
-  assign fmt_fifo_wdata[11]  = line_loopback ? 1'b0 : reg2hw.fdata.rcont.q;
-  assign fmt_fifo_wdata[12]  = line_loopback ? 1'b1 : reg2hw.fdata.nakok.q;
+  assign fmt_fifo_wdata[7:0] = reg2hw.fdata.fbyte.q;
+  assign fmt_fifo_wdata[8]   = reg2hw.fdata.start.q;
+  assign fmt_fifo_wdata[9]   = reg2hw.fdata.stop.q;
+  assign fmt_fifo_wdata[10]  = reg2hw.fdata.read.q;
+  assign fmt_fifo_wdata[11]  = reg2hw.fdata.rcont.q;
+  assign fmt_fifo_wdata[12]  = reg2hw.fdata.nakok.q;
 
   assign fmt_byte               = fmt_fifo_rvalid ? fmt_fifo_rdata[7:0] : '0;
   assign fmt_flag_start_before  = fmt_fifo_rvalid ? fmt_fifo_rdata[8] : '0;
@@ -304,7 +291,7 @@ module  i2c_core #(
 
   prim_fifo_sync #(
     .Width   (13),
-    .Pass    (1'b1),
+    .Pass    (1'b0),
     .Depth   (FifoDepth)
   ) u_i2c_fmtfifo (
     .clk_i,
@@ -317,7 +304,8 @@ module  i2c_core #(
     .rvalid_o(fmt_fifo_rvalid),
     .rready_i(fmt_fifo_rready),
     .rdata_o (fmt_fifo_rdata),
-    .full_o  ()
+    .full_o  (),
+    .err_o   ()
   );
 
   assign rx_fifo_rready = reg2hw.rdata.re;
@@ -337,19 +325,27 @@ module  i2c_core #(
     .rvalid_o(rx_fifo_rvalid),
     .rready_i(rx_fifo_rready),
     .rdata_o (rx_fifo_rdata),
-    .full_o  ()
+    .full_o  (),
+    .err_o   ()
   );
 
-  // Target TX and ACQ FIFOs
+  // Target TX FIFOs
   assign event_tx_overflow = tx_fifo_wvalid & ~tx_fifo_wready;
-  assign event_acq_overflow = acq_fifo_wvalid & ~acq_fifo_wready;
 
-  assign tx_fifo_wvalid = line_loopback ? 1'b1 : reg2hw.txdata.qe;
-  assign tx_fifo_wdata  = line_loopback ? acq_fifo_rdata[7:0] : reg2hw.txdata.q;
+  // Need to add a valid qualification to write only payload bytes
+  logic valid_target_lb_wr;
+  i2c_acq_byte_id_e acq_type;
+  assign acq_type = i2c_acq_byte_id_e'(acq_fifo_rdata[9:8]);
+
+  assign valid_target_lb_wr = target_enable & (acq_type == AcqData);
+
+  // only write into tx fifo if it's payload
+  assign tx_fifo_wvalid = target_loopback ? acq_fifo_rvalid & valid_target_lb_wr : reg2hw.txdata.qe;
+  assign tx_fifo_wdata  = target_loopback ? acq_fifo_rdata[7:0] : reg2hw.txdata.q;
 
   prim_fifo_sync #(
     .Width(8),
-    .Pass(1'b1),
+    .Pass(1'b0),
     .Depth(FifoDepth)
   ) u_i2c_txfifo (
     .clk_i,
@@ -362,10 +358,15 @@ module  i2c_core #(
     .rvalid_o(tx_fifo_rvalid),
     .rready_i(tx_fifo_rready),
     .rdata_o (tx_fifo_rdata),
-    .full_o  ()
+    .full_o  (),
+    .err_o   ()
   );
 
-  assign acq_fifo_rready = reg2hw.acqdata.abyte.re & reg2hw.acqdata.signal.re;
+  // During line loopback, pop from acquisition fifo only when there is space in
+  // the tx_fifo.  We are also allowed to pop even if there is no space if th acq entry
+  // is not data payload.
+  assign acq_fifo_rready = (reg2hw.acqdata.abyte.re & reg2hw.acqdata.signal.re) |
+                           (target_loopback & (tx_fifo_wready | (acq_type != AcqData)));
 
   prim_fifo_sync #(
     .Width(10),
@@ -376,13 +377,14 @@ module  i2c_core #(
     .rst_ni,
     .clr_i   (i2c_fifo_acqrst),
     .wvalid_i(acq_fifo_wvalid),
-    .wready_o(acq_fifo_wready),
+    .wready_o(),
     .wdata_i (acq_fifo_wdata),
     .depth_o (acq_fifo_depth),
     .rvalid_o(acq_fifo_rvalid),
     .rready_i(acq_fifo_rready),
     .rdata_o (acq_fifo_rdata),
-    .full_o  ()
+    .full_o  (),
+    .err_o   ()
   );
 
   // sync the incoming SCL and SDA signals
@@ -406,7 +408,9 @@ module  i2c_core #(
     .q_o (sda_sync)
   );
 
-  i2c_fsm u_i2c_fsm (
+  i2c_fsm #(
+    .FifoDepth(FifoDepth)
+  ) u_i2c_fsm (
     .clk_i,
     .rst_ni,
 
@@ -439,9 +443,11 @@ module  i2c_core #(
     .tx_fifo_rready_o        (tx_fifo_rready),
     .tx_fifo_rdata_i         (tx_fifo_rdata),
 
-    .acq_fifo_wready_i       (acq_fifo_wready),
+    .acq_fifo_wready_o       (acq_fifo_wready),
     .acq_fifo_wvalid_o       (acq_fifo_wvalid),
     .acq_fifo_wdata_o        (acq_fifo_wdata),
+    .acq_fifo_rdata_i        (acq_fifo_rdata),
+    .acq_fifo_depth_i        (acq_fifo_depth),
 
     .host_idle_o             (host_idle),
     .target_idle_o           (target_idle),
@@ -459,56 +465,45 @@ module  i2c_core #(
     .stretch_timeout_i       (stretch_timeout),
     .timeout_enable_i        (timeout_enable),
     .host_timeout_i          (host_timeout),
-
-    .stretch_en_addr_tx_i    (stretch_en_addr_tx),
-    .stretch_en_addr_acq_i   (stretch_en_addr_acq),
-    .stretch_stop_tx_i       (stretch_stop_tx),
-    .stretch_stop_acq_i      (stretch_stop_acq),
-
     .target_address0_i       (target_address0),
     .target_mask0_i          (target_mask0),
     .target_address1_i       (target_address1),
     .target_mask1_i          (target_mask1),
-
-    .stretch_stop_tx_clr_o   (stretch_stop_tx_clr),
-    .stretch_stop_acq_clr_o  (stretch_stop_acq_clr),
-
     .event_nak_o             (event_nak),
     .event_scl_interference_o(event_scl_interference),
     .event_sda_interference_o(event_sda_interference),
     .event_stretch_timeout_o (event_stretch_timeout),
     .event_sda_unstable_o    (event_sda_unstable),
-    .event_trans_complete_o  (event_trans_complete),
-    .event_tx_empty_o        (event_tx_empty),
-    .event_tx_nonempty_o     (event_tx_nonempty),
-    .event_ack_stop_o        (event_ack_stop),
+    .event_cmd_complete_o    (event_cmd_complete),
+    .event_tx_stretch_o      (event_tx_stretch),
+    .event_unexp_stop_o      (event_unexp_stop),
     .event_host_timeout_o    (event_host_timeout)
   );
 
-  prim_intr_hw #(.Width(1)) intr_hw_fmt_watermark (
+  prim_intr_hw #(.Width(1)) intr_hw_fmt_threshold (
     .clk_i,
     .rst_ni,
-    .event_intr_i           (event_fmt_watermark),
-    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.fmt_watermark.q),
-    .reg2hw_intr_test_q_i   (reg2hw.intr_test.fmt_watermark.q),
-    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.fmt_watermark.qe),
-    .reg2hw_intr_state_q_i  (reg2hw.intr_state.fmt_watermark.q),
-    .hw2reg_intr_state_de_o (hw2reg.intr_state.fmt_watermark.de),
-    .hw2reg_intr_state_d_o  (hw2reg.intr_state.fmt_watermark.d),
-    .intr_o                 (intr_fmt_watermark_o)
+    .event_intr_i           (event_fmt_threshold),
+    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.fmt_threshold.q),
+    .reg2hw_intr_test_q_i   (reg2hw.intr_test.fmt_threshold.q),
+    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.fmt_threshold.qe),
+    .reg2hw_intr_state_q_i  (reg2hw.intr_state.fmt_threshold.q),
+    .hw2reg_intr_state_de_o (hw2reg.intr_state.fmt_threshold.de),
+    .hw2reg_intr_state_d_o  (hw2reg.intr_state.fmt_threshold.d),
+    .intr_o                 (intr_fmt_threshold_o)
   );
 
-  prim_intr_hw #(.Width(1)) intr_hw_rx_watermark (
+  prim_intr_hw #(.Width(1)) intr_hw_rx_threshold (
     .clk_i,
     .rst_ni,
-    .event_intr_i           (event_rx_watermark),
-    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_watermark.q),
-    .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_watermark.q),
-    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_watermark.qe),
-    .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_watermark.q),
-    .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_watermark.de),
-    .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_watermark.d),
-    .intr_o                 (intr_rx_watermark_o)
+    .event_intr_i           (event_rx_threshold),
+    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.rx_threshold.q),
+    .reg2hw_intr_test_q_i   (reg2hw.intr_test.rx_threshold.q),
+    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.rx_threshold.qe),
+    .reg2hw_intr_state_q_i  (reg2hw.intr_state.rx_threshold.q),
+    .hw2reg_intr_state_de_o (hw2reg.intr_state.rx_threshold.de),
+    .hw2reg_intr_state_d_o  (hw2reg.intr_state.rx_threshold.d),
+    .intr_o                 (intr_rx_threshold_o)
   );
 
   prim_intr_hw #(.Width(1)) intr_hw_fmt_overflow (
@@ -602,43 +597,33 @@ module  i2c_core #(
     .intr_o                 (intr_sda_unstable_o)
   );
 
-  prim_intr_hw #(.Width(1)) intr_hw_trans_complete (
+  prim_intr_hw #(.Width(1)) intr_hw_cmd_complete (
     .clk_i,
     .rst_ni,
-    .event_intr_i           (event_trans_complete),
-    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.trans_complete.q),
-    .reg2hw_intr_test_q_i   (reg2hw.intr_test.trans_complete.q),
-    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.trans_complete.qe),
-    .reg2hw_intr_state_q_i  (reg2hw.intr_state.trans_complete.q),
-    .hw2reg_intr_state_de_o (hw2reg.intr_state.trans_complete.de),
-    .hw2reg_intr_state_d_o  (hw2reg.intr_state.trans_complete.d),
-    .intr_o                 (intr_trans_complete_o)
+    .event_intr_i           (event_cmd_complete),
+    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.cmd_complete.q),
+    .reg2hw_intr_test_q_i   (reg2hw.intr_test.cmd_complete.q),
+    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.cmd_complete.qe),
+    .reg2hw_intr_state_q_i  (reg2hw.intr_state.cmd_complete.q),
+    .hw2reg_intr_state_de_o (hw2reg.intr_state.cmd_complete.de),
+    .hw2reg_intr_state_d_o  (hw2reg.intr_state.cmd_complete.d),
+    .intr_o                 (intr_cmd_complete_o)
   );
 
-  prim_intr_hw #(.Width(1)) intr_hw_tx_empty (
+  prim_intr_hw #(
+    .Width(1),
+    .IntrT ("Status")
+  ) intr_hw_tx_stretch (
     .clk_i,
     .rst_ni,
-    .event_intr_i           (event_tx_empty),
-    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_empty.q),
-    .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_empty.q),
-    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_empty.qe),
-    .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_empty.q),
-    .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_empty.de),
-    .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_empty.d),
-    .intr_o                 (intr_tx_empty_o)
-  );
-
-  prim_intr_hw #(.Width(1)) intr_hw_tx_nonempty (
-    .clk_i,
-    .rst_ni,
-    .event_intr_i           (event_tx_nonempty),
-    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_nonempty.q),
-    .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_nonempty.q),
-    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_nonempty.qe),
-    .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_nonempty.q),
-    .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_nonempty.de),
-    .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_nonempty.d),
-    .intr_o                 (intr_tx_nonempty_o)
+    .event_intr_i           (event_tx_stretch),
+    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.tx_stretch.q),
+    .reg2hw_intr_test_q_i   (reg2hw.intr_test.tx_stretch.q),
+    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.tx_stretch.qe),
+    .reg2hw_intr_state_q_i  (reg2hw.intr_state.tx_stretch.q),
+    .hw2reg_intr_state_de_o (hw2reg.intr_state.tx_stretch.de),
+    .hw2reg_intr_state_d_o  (hw2reg.intr_state.tx_stretch.d),
+    .intr_o                 (intr_tx_stretch_o)
   );
 
   prim_intr_hw #(.Width(1)) intr_hw_tx_overflow (
@@ -654,30 +639,33 @@ module  i2c_core #(
     .intr_o                 (intr_tx_overflow_o)
   );
 
-  prim_intr_hw #(.Width(1)) intr_hw_acq_overflow (
+  prim_intr_hw #(
+    .Width(1),
+    .IntrT ("Status")
+  ) intr_hw_acq_overflow (
     .clk_i,
     .rst_ni,
-    .event_intr_i           (event_acq_overflow),
-    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.acq_overflow.q),
-    .reg2hw_intr_test_q_i   (reg2hw.intr_test.acq_overflow.q),
-    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.acq_overflow.qe),
-    .reg2hw_intr_state_q_i  (reg2hw.intr_state.acq_overflow.q),
-    .hw2reg_intr_state_de_o (hw2reg.intr_state.acq_overflow.de),
-    .hw2reg_intr_state_d_o  (hw2reg.intr_state.acq_overflow.d),
-    .intr_o                 (intr_acq_overflow_o)
+    .event_intr_i           (~acq_fifo_wready),
+    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.acq_full.q),
+    .reg2hw_intr_test_q_i   (reg2hw.intr_test.acq_full.q),
+    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.acq_full.qe),
+    .reg2hw_intr_state_q_i  (reg2hw.intr_state.acq_full.q),
+    .hw2reg_intr_state_de_o (hw2reg.intr_state.acq_full.de),
+    .hw2reg_intr_state_d_o  (hw2reg.intr_state.acq_full.d),
+    .intr_o                 (intr_acq_full_o)
   );
 
-  prim_intr_hw #(.Width(1)) intr_hw_ack_stop (
+  prim_intr_hw #(.Width(1)) intr_hw_unexp_stop (
     .clk_i,
     .rst_ni,
-    .event_intr_i           (event_ack_stop),
-    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.ack_stop.q),
-    .reg2hw_intr_test_q_i   (reg2hw.intr_test.ack_stop.q),
-    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.ack_stop.qe),
-    .reg2hw_intr_state_q_i  (reg2hw.intr_state.ack_stop.q),
-    .hw2reg_intr_state_de_o (hw2reg.intr_state.ack_stop.de),
-    .hw2reg_intr_state_d_o  (hw2reg.intr_state.ack_stop.d),
-    .intr_o                 (intr_ack_stop_o)
+    .event_intr_i           (event_unexp_stop),
+    .reg2hw_intr_enable_q_i (reg2hw.intr_enable.unexp_stop.q),
+    .reg2hw_intr_test_q_i   (reg2hw.intr_test.unexp_stop.q),
+    .reg2hw_intr_test_qe_i  (reg2hw.intr_test.unexp_stop.qe),
+    .reg2hw_intr_state_q_i  (reg2hw.intr_state.unexp_stop.q),
+    .hw2reg_intr_state_de_o (hw2reg.intr_state.unexp_stop.de),
+    .hw2reg_intr_state_d_o  (hw2reg.intr_state.unexp_stop.d),
+    .intr_o                 (intr_unexp_stop_o)
   );
 
   prim_intr_hw #(.Width(1)) intr_hw_host_timeout (

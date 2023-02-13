@@ -4,20 +4,23 @@
 //
 // Description: I2C top level wrapper file
 
-`include "common_cells/assertions.svh"
+`include "prim_assert.sv"
 
 module i2c
   import i2c_reg_pkg::*;
 #(
-  parameter type reg_req_t = logic,
-  parameter type reg_rsp_t = logic
+  parameter logic [NumAlerts-1:0] AlertAsyncOn = {NumAlerts{1'b1}}
 ) (
   input                     clk_i,
   input                     rst_ni,
 
   // Bus Interface
-  input  reg_req_t reg_req_i,
-  output reg_rsp_t reg_rsp_o,
+  input  tlul_pkg::tl_h2d_t tl_i,
+  output tlul_pkg::tl_d2h_t tl_o,
+
+  // Alerts
+  input  prim_alert_pkg::alert_rx_t [NumAlerts-1:0] alert_rx_i,
+  output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
 
   // Generic IO
   input                     cio_scl_i,
@@ -28,8 +31,8 @@ module i2c
   output logic              cio_sda_en_o,
 
   // Interrupts
-  output logic              intr_fmt_watermark_o,
-  output logic              intr_rx_watermark_o,
+  output logic              intr_fmt_threshold_o,
+  output logic              intr_rx_threshold_o,
   output logic              intr_fmt_overflow_o,
   output logic              intr_rx_overflow_o,
   output logic              intr_nak_o,
@@ -37,32 +40,51 @@ module i2c
   output logic              intr_sda_interference_o,
   output logic              intr_stretch_timeout_o,
   output logic              intr_sda_unstable_o,
-  output logic              intr_trans_complete_o,
-  output logic              intr_tx_empty_o,
-  output logic              intr_tx_nonempty_o,
+  output logic              intr_cmd_complete_o,
+  output logic              intr_tx_stretch_o,
   output logic              intr_tx_overflow_o,
-  output logic              intr_acq_overflow_o,
-  output logic              intr_ack_stop_o,
+  output logic              intr_acq_full_o,
+  output logic              intr_unexp_stop_o,
   output logic              intr_host_timeout_o
 );
-
-  import i2c_reg_pkg::*;
 
   i2c_reg2hw_t reg2hw;
   i2c_hw2reg_t hw2reg;
 
-  i2c_reg_top #(
-    .reg_req_t (reg_req_t),
-    .reg_rsp_t (reg_rsp_t)
-  ) u_reg (
+  logic [NumAlerts-1:0] alert_test, alerts;
+
+  i2c_reg_top u_reg (
     .clk_i,
     .rst_ni,
-    .reg_req_i,
-    .reg_rsp_o,
+    .tl_i,
+    .tl_o,
     .reg2hw,
     .hw2reg,
+    // SEC_CM: BUS.INTEGRITY
+    .intg_err_o(alerts[0]),
     .devmode_i(1'b1)
   );
+
+  assign alert_test = {
+    reg2hw.alert_test.q &
+    reg2hw.alert_test.qe
+  };
+
+  for (genvar i = 0; i < NumAlerts; i++) begin : gen_alert_tx
+    prim_alert_sender #(
+      .AsyncOn(AlertAsyncOn[i]),
+      .IsFatal(1'b1)
+    ) u_prim_alert_sender (
+      .clk_i,
+      .rst_ni,
+      .alert_test_i  ( alert_test[i] ),
+      .alert_req_i   ( alerts[0]     ),
+      .alert_ack_o   (               ),
+      .alert_state_o (               ),
+      .alert_rx_i    ( alert_rx_i[i] ),
+      .alert_tx_o    ( alert_tx_o[i] )
+    );
+  end
 
   logic scl_int;
   logic sda_int;
@@ -78,8 +100,8 @@ module i2c
     .sda_i(cio_sda_i),
     .sda_o(sda_int),
 
-    .intr_fmt_watermark_o,
-    .intr_rx_watermark_o,
+    .intr_fmt_threshold_o,
+    .intr_rx_threshold_o,
     .intr_fmt_overflow_o,
     .intr_rx_overflow_o,
     .intr_nak_o,
@@ -87,12 +109,11 @@ module i2c
     .intr_sda_interference_o,
     .intr_stretch_timeout_o,
     .intr_sda_unstable_o,
-    .intr_trans_complete_o,
-    .intr_tx_empty_o,
-    .intr_tx_nonempty_o,
+    .intr_cmd_complete_o,
+    .intr_tx_stretch_o,
     .intr_tx_overflow_o,
-    .intr_acq_overflow_o,
-    .intr_ack_stop_o,
+    .intr_acq_full_o,
+    .intr_unexp_stop_o,
     .intr_host_timeout_o
   );
 
@@ -106,12 +127,15 @@ module i2c
   assign cio_scl_en_o = ~scl_int;
   assign cio_sda_en_o = ~sda_int;
 
+  `ASSERT_KNOWN(TlDValidKnownO_A, tl_o.d_valid)
+  `ASSERT_KNOWN(TlAReadyKnownO_A, tl_o.a_ready)
+  `ASSERT_KNOWN(AlertKnownO_A, alert_tx_o)
   `ASSERT_KNOWN(CioSclKnownO_A, cio_scl_o)
   `ASSERT_KNOWN(CioSclEnKnownO_A, cio_scl_en_o)
   `ASSERT_KNOWN(CioSdaKnownO_A, cio_sda_o)
   `ASSERT_KNOWN(CioSdaEnKnownO_A, cio_sda_en_o)
-  `ASSERT_KNOWN(IntrFmtWtmkKnownO_A, intr_fmt_watermark_o)
-  `ASSERT_KNOWN(IntrRxWtmkKnownO_A, intr_rx_watermark_o)
+  `ASSERT_KNOWN(IntrFmtWtmkKnownO_A, intr_fmt_threshold_o)
+  `ASSERT_KNOWN(IntrRxWtmkKnownO_A, intr_rx_threshold_o)
   `ASSERT_KNOWN(IntrFmtOflwKnownO_A, intr_fmt_overflow_o)
   `ASSERT_KNOWN(IntrRxOflwKnownO_A, intr_rx_overflow_o)
   `ASSERT_KNOWN(IntrNakKnownO_A, intr_nak_o)
@@ -119,12 +143,13 @@ module i2c
   `ASSERT_KNOWN(IntrSdaInterfKnownO_A, intr_sda_interference_o)
   `ASSERT_KNOWN(IntrStretchTimeoutKnownO_A, intr_stretch_timeout_o)
   `ASSERT_KNOWN(IntrSdaUnstableKnownO_A, intr_sda_unstable_o)
-  `ASSERT_KNOWN(IntrTransCompleteKnownO_A, intr_trans_complete_o)
-  `ASSERT_KNOWN(IntrTxEmptyKnownO_A, intr_tx_empty_o)
-  `ASSERT_KNOWN(IntrTxNonemptyKnownO_A, intr_tx_nonempty_o)
+  `ASSERT_KNOWN(IntrCommandCompleteKnownO_A, intr_cmd_complete_o)
+  `ASSERT_KNOWN(IntrTxStretchKnownO_A, intr_tx_stretch_o)
   `ASSERT_KNOWN(IntrTxOflwKnownO_A, intr_tx_overflow_o)
-  `ASSERT_KNOWN(IntrAcqOflwKnownO_A, intr_acq_overflow_o)
-  `ASSERT_KNOWN(IntrAckStopKnownO_A, intr_ack_stop_o)
+  `ASSERT_KNOWN(IntrAcqFulllwKnownO_A, intr_acq_full_o)
+  `ASSERT_KNOWN(IntrUnexpStopKnownO_A, intr_unexp_stop_o)
   `ASSERT_KNOWN(IntrHostTimeoutKnownO_A, intr_host_timeout_o)
 
+  // Alert assertions for reg_we onehot check
+  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
 endmodule
