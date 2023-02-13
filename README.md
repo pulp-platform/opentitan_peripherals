@@ -14,7 +14,7 @@ This repository uses Bender's `vendor` command to fully include the remote code 
 To simplify IP reconfiguration in your project, you can include the GNU Make fragment `otp.mk` in your makefile, for example:
 
 ```make
-include $(bender path opentitan_peripherals)/otp.mk
+include $(shell bender path opentitan_peripherals)/otp.mk
 
 # Alternative PLIC parameters
 PLICOPT = -s 22 -t 1 -p 7
