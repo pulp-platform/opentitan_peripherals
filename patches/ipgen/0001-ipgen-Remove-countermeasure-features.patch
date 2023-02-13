@@ -1,0 +1,39 @@
+From 000aa2243e0fb49792fb64762d2a31770655e4fe Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Mon, 13 Feb 2023 23:14:56 +0100
+Subject: [PATCH] ipgen: Remove countermeasure features
+
+---
+ renderer.py | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/renderer.py b/renderer.py
+index 9387828a8..455df9448 100644
+--- a/renderer.py
++++ b/renderer.py
+@@ -13,7 +13,7 @@ import reggen.gen_rtl
+ from mako import exceptions as mako_exceptions  # type: ignore
+ from mako.lookup import TemplateLookup as MakoTemplateLookup  # type: ignore
+ from reggen.ip_block import IpBlock
+-from reggen.countermeasure import CounterMeasure
++#from reggen.countermeasure import CounterMeasure
+ 
+ from .lib import IpConfig, IpTemplate, TemplateParameter
+ 
+@@ -285,13 +285,6 @@ class IpBlockRenderer(IpTemplateRendererBase):
+ 
+             obj = IpBlock.from_path(str(hjson_path), [])
+ 
+-            # If this block has countermeasures, we grep for RTL annotations in
+-            # all .sv implementation files and check whether they match up
+-            # with what is defined inside the Hjson.
+-            sv_files = rtl_path.glob('*.sv')
+-            rtl_names = CounterMeasure.search_rtl_files(sv_files)
+-            obj.check_cm_annotations(rtl_names, str(hjson_path))
+-
+             # TODO: Pass on template parameters to reggen? Or enable the user
+             # to set a different set of parameters in the renderer?
+             reggen.gen_rtl.gen_rtl(obj, str(rtl_path))
+-- 
+2.16.5
+

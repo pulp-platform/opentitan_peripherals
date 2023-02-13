@@ -14,11 +14,8 @@
 // Verilog parameter
 //   MAX_PRIO: Maximum value of interrupt priority
 
-`include "common_cells/assertions.svh"
-
-module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
-  parameter type reg_req_t = logic,
-  parameter type reg_rsp_t = logic,
+module rv_plic import rv_plic_reg_pkg::*; #(
+  parameter logic [NumAlerts-1:0] AlertAsyncOn  = {NumAlerts{1'b1}},
   // OpenTitan IP standardizes on level triggered interrupts,
   // hence LevelEdgeTrig is set to all-zeroes by default.
   // Note that in case of edge-triggered interrupts, CDC handling is not
@@ -32,11 +29,15 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
   input     rst_ni,
 
   // Bus Interface (device)
-  input  reg_req_t reg_req_i,
-  output reg_rsp_t reg_rsp_o,
+  input  tlul_pkg::tl_h2d_t tl_i,
+  output tlul_pkg::tl_d2h_t tl_o,
 
   // Interrupt Sources
   input  [NumSrc-1:0] intr_src_i,
+
+  // Alerts
+  input  prim_alert_pkg::alert_rx_t [NumAlerts-1:0] alert_rx_i,
+  output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
 
   // Interrupt notification to targets
   output [NumTarget-1:0] irq_o,
@@ -45,10 +46,10 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
   output logic [NumTarget-1:0] msip_o
 );
 
-  ${module_instance_name}_reg2hw_t reg2hw;
-  ${module_instance_name}_hw2reg_t hw2reg;
+  rv_plic_reg2hw_t reg2hw;
+  rv_plic_hw2reg_t hw2reg;
 
-  localparam int MAX_PRIO    = ${prio};
+  localparam int MAX_PRIO    = 7;
   localparam int PRIOW = $clog2(MAX_PRIO+1);
 
   logic [NumSrc-1:0] ip;
@@ -69,7 +70,7 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
 
   logic [PRIOW-1:0] threshold [NumTarget];
 
-  // Glue logic between ${module_instance_name}_reg_top and others
+  // Glue logic between rv_plic_reg_top and others
   assign cc_id = irq_id_o;
 
   always_comb begin
@@ -95,48 +96,69 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
   //////////////
   // Priority //
   //////////////
-% for s in range(src):
-  assign prio[${s}] = reg2hw.prio${s}.q;
-% endfor
+  assign prio[0] = reg2hw.prio0.q;
+  assign prio[1] = reg2hw.prio1.q;
+  assign prio[2] = reg2hw.prio2.q;
+  assign prio[3] = reg2hw.prio3.q;
+  assign prio[4] = reg2hw.prio4.q;
+  assign prio[5] = reg2hw.prio5.q;
+  assign prio[6] = reg2hw.prio6.q;
+  assign prio[7] = reg2hw.prio7.q;
+  assign prio[8] = reg2hw.prio8.q;
+  assign prio[9] = reg2hw.prio9.q;
+  assign prio[10] = reg2hw.prio10.q;
+  assign prio[11] = reg2hw.prio11.q;
+  assign prio[12] = reg2hw.prio12.q;
+  assign prio[13] = reg2hw.prio13.q;
+  assign prio[14] = reg2hw.prio14.q;
+  assign prio[15] = reg2hw.prio15.q;
+  assign prio[16] = reg2hw.prio16.q;
+  assign prio[17] = reg2hw.prio17.q;
+  assign prio[18] = reg2hw.prio18.q;
+  assign prio[19] = reg2hw.prio19.q;
+  assign prio[20] = reg2hw.prio20.q;
+  assign prio[21] = reg2hw.prio21.q;
+  assign prio[22] = reg2hw.prio22.q;
+  assign prio[23] = reg2hw.prio23.q;
+  assign prio[24] = reg2hw.prio24.q;
+  assign prio[25] = reg2hw.prio25.q;
+  assign prio[26] = reg2hw.prio26.q;
+  assign prio[27] = reg2hw.prio27.q;
+  assign prio[28] = reg2hw.prio28.q;
+  assign prio[29] = reg2hw.prio29.q;
+  assign prio[30] = reg2hw.prio30.q;
+  assign prio[31] = reg2hw.prio31.q;
 
   //////////////////////
   // Interrupt Enable //
   //////////////////////
-% for t in range(target):
-  for (genvar s = 0; s < ${src}; s++) begin : gen_ie${t}
-    assign ie[${t}][s] = reg2hw.ie${t}[s].q;
+  for (genvar s = 0; s < 32; s++) begin : gen_ie0
+    assign ie[0][s] = reg2hw.ie0[s].q;
   end
-% endfor
 
   ////////////////////////
   // THRESHOLD register //
   ////////////////////////
-% for t in range(target):
-  assign threshold[${t}] = reg2hw.threshold${t}.q;
-% endfor
+  assign threshold[0] = reg2hw.threshold0.q;
 
   /////////////////
   // CC register //
   /////////////////
-% for t in range(target):
-  assign claim_re[${t}]    = reg2hw.cc${t}.re;
-  assign claim_id[${t}]    = irq_id_o[${t}];
-  assign complete_we[${t}] = reg2hw.cc${t}.qe;
-  assign complete_id[${t}] = reg2hw.cc${t}.q;
-  assign hw2reg.cc${t}.d   = cc_id[${t}];
-% endfor
+  assign claim_re[0]    = reg2hw.cc0.re;
+  assign claim_id[0]    = irq_id_o[0];
+  assign complete_we[0] = reg2hw.cc0.qe;
+  assign complete_id[0] = reg2hw.cc0.q;
+  assign hw2reg.cc0.d   = cc_id[0];
 
   ///////////////////
   // MSIP register //
   ///////////////////
-% for t in range(target):
-  assign msip_o[${t}] = reg2hw.msip${t}.q;
-% endfor
+  assign msip_o[0] = reg2hw.msip0.q;
 
   ////////
   // IP //
   ////////
-  for (genvar s = 0; s < ${src}; s++) begin : gen_ip
+  for (genvar s = 0; s < 32; s++) begin : gen_ip
     assign hw2reg.ip[s].de = 1'b1; // Always write
     assign hw2reg.ip[s].d  = ip[s];
   end
@@ -156,7 +178,7 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
     .q_o(intr_src_synced)
   );
 
-  ${module_instance_name}_gateway #(
+  rv_plic_gateway #(
     .N_SOURCE   (NumSrc)
   ) u_gateway (
     .clk_i,
@@ -175,7 +197,7 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
   // Target interrupt notification //
   ///////////////////////////////////
   for (genvar i = 0 ; i < NumTarget ; i++) begin : gen_target
-    ${module_instance_name}_target #(
+    rv_plic_target #(
       .N_SOURCE    (NumSrc),
       .MAX_PRIO    (MAX_PRIO)
     ) u_target (
@@ -194,28 +216,57 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
     );
   end
 
+  ////////////
+  // Alerts //
+  ////////////
+
+  logic [NumAlerts-1:0] alert_test, alerts;
+
+  assign alert_test = {
+    reg2hw.alert_test.q &
+    reg2hw.alert_test.qe
+  };
+
+  for (genvar i = 0; i < NumAlerts; i++) begin : gen_alert_tx
+    prim_alert_sender #(
+      .AsyncOn(AlertAsyncOn[i]),
+      .IsFatal(1'b1)
+    ) u_prim_alert_sender (
+      .clk_i,
+      .rst_ni,
+      .alert_test_i  ( alert_test[i] ),
+      .alert_req_i   ( alerts[i]     ),
+      .alert_ack_o   (               ),
+      .alert_state_o (               ),
+      .alert_rx_i    ( alert_rx_i[i] ),
+      .alert_tx_o    ( alert_tx_o[i] )
+    );
+  end
+
   ////////////////////////
   // Register interface //
   ////////////////////////
   //  Limitation of register tool prevents the module from having flexibility to parameters
   //  So, signals are manually tied at the top.
-  ${module_instance_name}_reg_top #(
-    .reg_req_t (reg_req_t),
-    .reg_rsp_t (reg_rsp_t)
-  ) u_reg (
+  rv_plic_reg_top u_reg (
     .clk_i,
     .rst_ni,
 
-    .reg_req_i,
-    .reg_rsp_o,
+    .tl_i,
+    .tl_o,
 
     .reg2hw,
     .hw2reg,
+
+    // SEC_CM: BUS.INTEGRITY
+    .intg_err_o(alerts[0]),
 
     .devmode_i  (1'b1)
   );
 
   // Assertions
+  `ASSERT_KNOWN(TlDValidKnownO_A, tl_o.d_valid)
+  `ASSERT_KNOWN(TlAReadyKnownO_A, tl_o.a_ready)
   `ASSERT_KNOWN(IrqKnownO_A, irq_o)
   `ASSERT_KNOWN(MsipKnownO_A, msip_o)
   for (genvar k = 0; k < NumTarget; k++) begin : gen_irq_id_known

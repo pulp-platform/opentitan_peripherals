@@ -1,0 +1,6 @@
+{
+    instance_name: "rv_plic",
+    # We leave all parameters to their default values.
+    # Any user of this IP may override this file before use.
+    param_values: {},
+}
