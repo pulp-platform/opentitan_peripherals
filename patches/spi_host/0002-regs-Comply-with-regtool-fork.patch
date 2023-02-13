@@ -1,0 +1,49 @@
+From d4132688d3690ef05068e29a195e9f48998c3ee7 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Mon, 13 Feb 2023 23:56:35 +0100
+Subject: [PATCH] regs: Comply with regtool fork
+
+---
+ data/spi_host.hjson | 19 -------------------
+ 1 file changed, 19 deletions(-)
+
+diff --git a/data/spi_host.hjson b/data/spi_host.hjson
+index 4afbfb3c7..cd937f6c1 100644
+--- a/data/spi_host.hjson
++++ b/data/spi_host.hjson
+@@ -3,20 +3,6 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name:               "spi_host",
+-  one_line_desc:      "Serial peripheral interface for host mode, suitable for interfacing external serial NOR flash devices",
+-  design_spec:        "../doc",
+-  dv_doc:             "../doc/dv",
+-  hw_checklist:       "../doc/checklist",
+-  sw_checklist:       "/sw/device/lib/dif/dif_spi_host",
+-  revisions: [
+-    {
+-      version:            "1.0",
+-      life_stage:         "L1",
+-      design_stage:       "D2S",
+-      verification_stage: "V2S",
+-      dif_stage:          "S2",
+-    }
+-  ]
+   clock_primary: "clk_i",
+   other_clock_list: [ "clk_core_i" ],
+   reset_primary: "rst_ni",
+@@ -98,11 +84,6 @@
+       '''
+     }
+   ],
+-  countermeasures: [
+-    { name: "BUS.INTEGRITY",
+-      desc: "End-to-end bus integrity scheme."
+-    }
+-  ]
+   registers: [
+     { name: "CONTROL",
+       desc: "Control register",
+-- 
+2.16.5
+

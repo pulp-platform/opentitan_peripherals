@@ -1,0 +1,75 @@
+From 160d9034bf3ffe185f9a0a6096ca9dc6d4d4c52b Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Mon, 13 Feb 2023 23:56:05 +0100
+Subject: [PATCH] regs: Comply with regtool fork
+
+---
+ data/gpio.hjson | 31 -------------------------------
+ 1 file changed, 31 deletions(-)
+
+diff --git a/data/gpio.hjson b/data/gpio.hjson
+index 762ce26ad..239ba3df6 100644
+--- a/data/gpio.hjson
++++ b/data/gpio.hjson
+@@ -3,30 +3,6 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name:               "gpio",
+-  one_line_desc:      "General-purpose I/O pin control interface for software",
+-  design_spec:        "../doc",
+-  dv_doc:             "../doc/dv",
+-  hw_checklist:       "../doc/checklist",
+-  sw_checklist:       "/sw/device/lib/dif/dif_gpio",
+-  revisions: [
+-    {
+-      version:            "1.0",
+-      life_stage:         "L2",
+-      design_stage:       "D3",
+-      verification_stage: "V3",
+-      commit_id:          "c1be7eb2b7265cd5ba6ceb026c28acf8e371151a",
+-      notes:              "",
+-    }
+-    {
+-      version:            "1.1",
+-      life_stage:         "L1",
+-      design_stage:       "D3",
+-      verification_stage: "V2",
+-      dif_stage:          "S2",
+-      commit_id:          "9a2fd04f5e1f36128c858d6a1a7b06c34681337c"
+-      notes:              ""
+-    }
+-  ]
+   clock_primary: "clk_i",
+   bus_interfaces: [
+     { protocol: "reg_iface", direction: "device" }
+@@ -41,7 +17,6 @@
+     { name: "gpio",
+       width: 32,
+       desc: "raised if any of GPIO pin detects configured interrupt mode"
+-      auto_split: "true"
+     }
+   ],
+   alert_list: [
+@@ -62,11 +37,6 @@
+       expose:  "true"
+     },
+   ]
+-  countermeasures: [
+-    { name: "BUS.INTEGRITY",
+-      desc: "End-to-end bus integrity scheme."
+-    }
+-  ]
+ 
+   regwidth: "32",
+   registers: [
+@@ -177,7 +147,6 @@
+       hwqe: "true",
+       fields: [
+         { bits: "31:0",
+-          auto_split: "true"
+         }
+       ],
+     },
+-- 
+2.16.5
+

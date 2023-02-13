@@ -3,20 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 {
   name:               "spi_host",
-  one_line_desc:      "Serial peripheral interface for host mode, suitable for interfacing external serial NOR flash devices",
-  design_spec:        "../doc",
-  dv_doc:             "../doc/dv",
-  hw_checklist:       "../doc/checklist",
-  sw_checklist:       "/sw/device/lib/dif/dif_spi_host",
-  revisions: [
-    {
-      version:            "1.0",
-      life_stage:         "L1",
-      design_stage:       "D2S",
-      verification_stage: "V2S",
-      dif_stage:          "S2",
-    }
-  ]
   clock_primary: "clk_i",
   other_clock_list: [ "clk_core_i" ],
   reset_primary: "rst_ni",
@@ -98,11 +84,6 @@
       '''
     }
   ],
-  countermeasures: [
-    { name: "BUS.INTEGRITY",
-      desc: "End-to-end bus integrity scheme."
-    }
-  ]
   registers: [
     { name: "CONTROL",
       desc: "Control register",

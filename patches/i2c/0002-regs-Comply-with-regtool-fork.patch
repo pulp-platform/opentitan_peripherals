@@ -1,0 +1,65 @@
+From 56bc036a6a327a02606cbe9bef7025b121743fd8 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Mon, 13 Feb 2023 23:56:33 +0100
+Subject: [PATCH] regs: Comply with regtool fork
+
+---
+ data/i2c.hjson | 22 ----------------------
+ 1 file changed, 22 deletions(-)
+
+diff --git a/data/i2c.hjson b/data/i2c.hjson
+index e6c431c52..26120130f 100644
+--- a/data/i2c.hjson
++++ b/data/i2c.hjson
+@@ -4,21 +4,6 @@
+ 
+ {
+   name:               "i2c",
+-  one_line_desc:      "I2C interface for host and device mode, supporting up to 1 Mbaud data rates",
+-  design_spec:        "../doc",
+-  dv_doc:             "../doc/dv",
+-  hw_checklist:       "../doc/checklist",
+-  sw_checklist:       "/sw/device/lib/dif/dif_i2c",
+-  revisions: [
+-    {
+-      version:            "1.0",
+-      life_stage:         "L1",
+-      design_stage:       "D2S",
+-      verification_stage: "V1",
+-      dif_stage:          "S2",
+-      notes:              ""
+-    }
+-  ]
+   clock_primary: "clk_i"
+   bus_interfaces: [
+     { protocol: "reg_iface", direction: "device" }
+@@ -66,14 +51,12 @@
+     }
+     { name: "tx_stretch"
+       desc: "target mode interrupt: raised if the target is stretching clocks for a read command.  This is a level status interrupt."
+-      type: "status"
+     }
+     { name: "tx_overflow"
+       desc: "target mode interrupt: raised if TX FIFO has overflowed."
+     }
+     { name: "acq_full"
+       desc: "target mode interrupt: raised if ACQ FIFO becomes full.  This is a level status interrupt."
+-      type: "status"
+     }
+     { name: "unexp_stop"
+       desc: "target mode interrupt: raised if STOP is received without a preceding NACK during an external host read."
+@@ -96,11 +79,6 @@
+       default: "64",
+     }
+   ],
+-  countermeasures: [
+-    { name: "BUS.INTEGRITY",
+-      desc: "End-to-end bus integrity scheme."
+-    }
+-  ]
+ 
+   // REGISTER definition
+   regwidth: "32"
+-- 
+2.16.5
+
