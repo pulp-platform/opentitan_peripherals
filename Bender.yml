@@ -34,6 +34,7 @@ vendor_package:
       - "*fpv"
       - "*.prj.hjson"
       - "*_testplan.hjson"
+      - "*_testplan.hjson.tpl"
       - "*README.md"
       - "*BUILD"
       # We do not need primitive generation

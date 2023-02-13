@@ -15,21 +15,27 @@ REGTOOL  ?= $(shell $(BENDER) path register_interface)/vendor/lowrisc_opentitan/
 PLICOPT  ?= -s 32 -t 1 -p 7
 
 OTPROOT  ?= $(shell $(BENDER) path opentitan_peripherals)
-PLICTOOL ?= $(OTPROOT)/src/rv_plic/util/reg_rv_plic.py
+IPGEN    ?= $(OTPROOT)/util/ipgen.py
 
-_otp: otp_rv_plic
 _otp: otp_gpio
 _otp: otp_i2c
 _otp: otp_spi_host
 
-$(OTPROOT)/src/rv_plic/rtl/rv_plic.sv: $(OTPROOT)/src/rv_plic/data/rv_plic.sv.tpl
-	$(PLICTOOL) $(PLICOPT) $< > $@
+# PLIC generation inputs and outputs
+OTP_PLIC_TPLD = $(OTPROOT)/src/rv_plic/tpl/rv_plic
+OTP_PLIC_IN   = $(addprefix $(OTP_PLIC_TPLD)/rtl/, rv_plic.sv.tpl rv_plic_gateway.sv.tpl rv_plic_target.sv.tpl)
+OTP_PLIC_IN  += $(addprefix $(OTP_PLIC_TPLD)/data/, rv_plic.hjson.tpl rv_plic.tpldesc.hjson)
+OTP_PLIC_OUTD = $(OTPROOT)/src/rv_plic/
+OTP_PLIC_OUT  = $(addprefix $(OTP_PLIC_OUTD)/rtl/, rv_plic.sv rv_plic_gateway.sv rv_plic_target.sv)
+OTP_PLIC_OUT += $(addprefix $(OTP_PLIC_OUTD)/data/, rv_plic.hjson rv_plic.ipconfig.hjson)
 
-$(OTPROOT)/src/rv_plic/data/rv_plic.hjson: $(OTPROOT)/src/rv_plic/data/rv_plic.hjson.tpl
-	$(PLICTOOL) $(PLICOPT) $< > $@
+# Only one target must be built to build them all
+_otp: $(OTP_PLIC_OUTD)/rtl/rv_plic.sv
 
-otp_rv_plic: $(OTPROOT)/src/rv_plic/data/rv_plic.hjson $(OTPROOT)/src/rv_plic/rtl/rv_plic.sv $(REGTOOL)
-	$(REGTOOL) -r -t $(OTPROOT)/src/rv_plic/rtl $<
+$(OTP_PLIC_OUT): $(OTP_PLIC_IN)
+	rm -rf $(OTP_PLIC_OUTD)/gen
+	$(IPGEN) generate -C $(OTP_PLIC_TPLD) -o $(OTP_PLIC_OUTD)/gen -c $(OTPROOT)/src/rv_plic/rv_plic.cfg.hjson
+	mv $(OTP_PLIC_OUTD)/gen/* $(OTP_PLIC_OUTD)/
 
 otp_gpio: $(OTPROOT)/src/gpio/data/gpio.hjson $(REGTOOL)
 	$(REGTOOL) -r -t $(OTPROOT)/src/gpio/rtl $<
@@ -41,5 +47,5 @@ otp_spi_host: $(OTPROOT)/src/spi_host/data/spi_host.hjson $(REGTOOL)
 	$(REGTOOL) -r -t $(OTPROOT)/src/spi_host/rtl $<
 
 otp:
-	@echo '[PULP] Generate OpenTitan peripherals (PLICOPT=`$(PLICOPT)`)'
+	@echo '[PULP] Generate OpenTitan peripherals'
 	@$(MAKE) -B _otp
