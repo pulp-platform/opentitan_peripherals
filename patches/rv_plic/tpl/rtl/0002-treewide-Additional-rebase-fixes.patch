@@ -1,0 +1,23 @@
+From 5cc51682abb6d883b63e4260a254e4516e41411b Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Wed, 15 Feb 2023 15:40:28 +0100
+Subject: [PATCH] treewide: Additional rebase fixes
+
+---
+ rv_plic.sv.tpl | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/rv_plic.sv.tpl b/rv_plic.sv.tpl
+index 0b93dbe3d..9ca2c15c5 100644
+--- a/rv_plic.sv.tpl
++++ b/rv_plic.sv.tpl
+@@ -225,6 +225,4 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
+   // Assume
+   `ASSUME(Irq0Tied_A, intr_src_i[0] == 1'b0)
+ 
+-  // Alert assertions for reg_we onehot check
+-  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
+ endmodule
+-- 
+2.16.5
+

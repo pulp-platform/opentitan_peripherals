@@ -4,7 +4,6 @@
 //
 // Description: I2C top level wrapper file
 
-`include "prim_assert.sv"
 `include "common_cells/assertions.svh"
 
 module i2c
@@ -17,10 +16,6 @@ module i2c
   input                     rst_ni,
 
   // Bus Interface
-  input  tlul_pkg::tl_h2d_t tl_i,
-  output tlul_pkg::tl_d2h_t tl_o,
-
-  // Alerts
   input  reg_req_t reg_req_i,
   output reg_rsp_t reg_rsp_o,
 
@@ -52,8 +47,6 @@ module i2c
 
   i2c_reg2hw_t reg2hw;
   i2c_hw2reg_t hw2reg;
-
-  logic [NumAlerts-1:0] alert_test, alerts;
 
   i2c_reg_top #(
     .reg_req_t (reg_req_t),
@@ -129,6 +122,4 @@ module i2c
   `ASSERT_KNOWN(IntrUnexpStopKnownO_A, intr_unexp_stop_o)
   `ASSERT_KNOWN(IntrHostTimeoutKnownO_A, intr_host_timeout_o)
 
-  // Alert assertions for reg_we onehot check
-  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
 endmodule

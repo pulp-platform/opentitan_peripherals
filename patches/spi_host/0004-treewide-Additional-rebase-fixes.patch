@@ -1,0 +1,31 @@
+From 40fa9708e08df6c883bfb31700256b8f6e84c978 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Wed, 15 Feb 2023 15:38:32 +0100
+Subject: [PATCH] treewide: Additional rebase fixes
+
+---
+ rtl/spi_host.sv | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/rtl/spi_host.sv b/rtl/spi_host.sv
+index 41dd22c53..03fb4423e 100644
+--- a/rtl/spi_host.sv
++++ b/rtl/spi_host.sv
+@@ -6,7 +6,6 @@
+ //
+ //
+ 
+-`include "prim_assert.sv"
+ `include "common_cells/assertions.svh"
+ 
+ module spi_host
+@@ -535,6 +534,4 @@ module spi_host
+   `ASSERT_KNOWN(IntrSpiEventKnownO_A, intr_spi_event_o)
+   `ASSERT_KNOWN(IntrErrorKnownO_A, intr_error_o)
+ 
+-  // Alert assertions for reg_we onehot check
+-  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
+ endmodule : spi_host
+-- 
+2.16.5
+

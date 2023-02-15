@@ -6,7 +6,6 @@
 //
 //
 
-`include "prim_assert.sv"
 `include "common_cells/assertions.svh"
 
 module spi_host
@@ -535,6 +534,4 @@ module spi_host
   `ASSERT_KNOWN(IntrSpiEventKnownO_A, intr_spi_event_o)
   `ASSERT_KNOWN(IntrErrorKnownO_A, intr_error_o)
 
-  // Alert assertions for reg_we onehot check
-  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
 endmodule : spi_host
