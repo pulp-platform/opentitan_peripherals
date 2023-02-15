@@ -7,7 +7,9 @@
 
 module prim_flop_2sync #(
   parameter int               Width      = 16,
-  parameter logic [Width-1:0] ResetValue = '0
+  parameter logic [Width-1:0] ResetValue = '0,
+  // We keep this parameter only for compatibility
+  parameter bit               EnablePrimCdcRand = 1
 ) (
   input  logic clk_i,
   input  logic rst_ni,

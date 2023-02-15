@@ -35,7 +35,7 @@ module spi_host_window #(
   assign rx_access_error = rx_we;
 
   // Check that our RX regbus data is 32 bit wide
-  `ASSERT_INIT(RegbusIs32Bit, $bits(rx_win_i.wdata) == 32)
+  `ASSERT_INIT(RxRegbusIs32Bit, $bits(rx_win_i.wdata) == 32)
 
   // We are already a regbus, so no stateful adapter should be needed here
   // Request
@@ -47,7 +47,7 @@ module spi_host_window #(
   assign rx_win_o.ready  = 1'b1;
 
   // Check that our TX regbus data is 32 bit wide
-  `ASSERT_INIT(RegbusIs32Bit, $bits(tx_win_i.wdata) == 32)
+  `ASSERT_INIT(TxRegbusIs32Bit, $bits(tx_win_i.wdata) == 32)
 
   // We are already a regbus, so no stateful adapter should be needed here
   // Request

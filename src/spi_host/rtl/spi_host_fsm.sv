@@ -566,7 +566,8 @@ module spi_host_fsm
     end else begin
       unique case (speed_o)
         Standard: begin
-          sd_en_o[0]   = cmd_wr_en;
+          // TODO @paulsc: We fixed this from 1'b1 before; is this fix still valid?
+          sd_en_o[0]   = cmd_wr_en_q;
           sd_en_o[1]   = 1'b0;
           sd_en_o[3:2] = 2'b00;
         end
