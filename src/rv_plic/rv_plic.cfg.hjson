@@ -1,6 +1,10 @@
+// Copyright 2022 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
 {
     instance_name: "rv_plic",
-    # We leave all parameters to their default values.
-    # Any user of this IP may override this file before use.
+    // We leave all parameters to their default values.
+    // Any user of this IP may override this file before use.
     param_values: {},
 }

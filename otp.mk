@@ -25,7 +25,7 @@ _otp: otp_spi_host
 OTP_PLIC_TPLD = $(OTPROOT)/src/rv_plic/tpl/rv_plic
 OTP_PLIC_IN   = $(addprefix $(OTP_PLIC_TPLD)/rtl/, rv_plic.sv.tpl rv_plic_gateway.sv.tpl rv_plic_target.sv.tpl)
 OTP_PLIC_IN  += $(addprefix $(OTP_PLIC_TPLD)/data/, rv_plic.hjson.tpl rv_plic.tpldesc.hjson)
-OTP_PLIC_OUTD = $(OTPROOT)/src/rv_plic/
+OTP_PLIC_OUTD = $(OTPROOT)/src/rv_plic
 OTP_PLIC_OUT  = $(addprefix $(OTP_PLIC_OUTD)/rtl/, rv_plic.sv rv_plic_gateway.sv rv_plic_target.sv)
 OTP_PLIC_OUT += $(addprefix $(OTP_PLIC_OUTD)/data/, rv_plic.hjson rv_plic.ipconfig.hjson)
 
@@ -33,9 +33,11 @@ OTP_PLIC_OUT += $(addprefix $(OTP_PLIC_OUTD)/data/, rv_plic.hjson rv_plic.ipconf
 _otp: $(OTP_PLIC_OUTD)/rtl/rv_plic.sv
 
 $(OTP_PLIC_OUT): $(OTP_PLIC_IN)
+	echo $(PYTHONPATH)
 	rm -rf $(OTP_PLIC_OUTD)/gen
-	$(IPGEN) generate -C $(OTP_PLIC_TPLD) -o $(OTP_PLIC_OUTD)/gen -c $(OTPROOT)/src/rv_plic/rv_plic.cfg.hjson
-	mv $(OTP_PLIC_OUTD)/gen/* $(OTP_PLIC_OUTD)/
+	PYTHONPATH=$(dir $(REGTOOL)) $(IPGEN) generate -C $(OTP_PLIC_TPLD) -o $(OTP_PLIC_OUTD)/gen -c $(OTPROOT)/src/rv_plic/rv_plic.cfg.hjson
+	cp -a $(OTP_PLIC_OUTD)/gen/* $(OTP_PLIC_OUTD)/
+	rm -rf $(OTP_PLIC_OUTD)/gen
 
 otp_gpio: $(OTPROOT)/src/gpio/data/gpio.hjson $(REGTOOL)
 	$(REGTOOL) -r -t $(OTPROOT)/src/gpio/rtl $<
