@@ -58,6 +58,7 @@ sources:
   - src/prim/prim_pulp_platform/prim_flop_2sync.sv
   - src/prim/prim_pulp_platform/prim_flop_en.sv
   # Level 0
+  - src/prim/rtl/prim_fifo_sync_cnt.sv
   - src/prim/rtl/prim_util_pkg.sv
   # Level 1
   - src/prim/rtl/prim_max_tree.sv

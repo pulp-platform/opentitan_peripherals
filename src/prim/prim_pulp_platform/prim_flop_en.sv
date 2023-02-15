@@ -11,7 +11,7 @@
 
 `include "common_cells/assertions.svh"
 
-module prim_generic_flop_en #(
+module prim_flop_en #(
   parameter int               Width      = 1,
   parameter bit               EnSecBuf   = 0,
   parameter logic [Width-1:0] ResetValue = 0
@@ -27,7 +27,7 @@ module prim_generic_flop_en #(
   if (EnSecBuf) begin : gen_en_sec_buf
     tc_clk_buffer u_en_buf (
       .clk_i ( en_i ),
-      .clk_i ( en )
+      .clk_o ( en )
     );
   end else begin : gen_en_no_sec_buf
     assign en = en_i;

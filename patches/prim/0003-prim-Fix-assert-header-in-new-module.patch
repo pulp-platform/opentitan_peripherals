@@ -1,0 +1,25 @@
+From 9e39a0d502837807a2bd2eb8ca1d624de7055750 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Wed, 15 Feb 2023 18:14:57 +0100
+Subject: [PATCH] prim: Fix assert header in new module
+
+---
+ rtl/prim_max_tree.sv | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rtl/prim_max_tree.sv b/rtl/prim_max_tree.sv
+index e23a76f30..58b7d05fe 100644
+--- a/rtl/prim_max_tree.sv
++++ b/rtl/prim_max_tree.sv
+@@ -14,7 +14,7 @@
+ // be equal to the input value at index 0.
+ 
+ 
+-`include "prim_assert.sv"
++`include "common_cells/assertions.svh"
+ 
+ module prim_max_tree #(
+   parameter int NumSrc = 32,
+-- 
+2.16.5
+
