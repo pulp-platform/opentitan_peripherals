@@ -1,0 +1,41 @@
+From 4e3baf6937c92be48f041ca8eadf96d1db1b8c6b Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Wed, 15 Feb 2023 19:20:53 +0100
+Subject: [PATCH] spi_host: Fix window array packing
+
+---
+ data/spi_host.hjson | 2 --
+ rtl/spi_host.sv     | 4 ++--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/data/spi_host.hjson b/data/spi_host.hjson
+index cd937f6c1..b86df844b 100644
+--- a/data/spi_host.hjson
++++ b/data/spi_host.hjson
+@@ -5,8 +5,6 @@
+   name:               "spi_host",
+   clock_primary: "clk_i",
+   other_clock_list: [ "clk_core_i" ],
+-  reset_primary: "rst_ni",
+-  other_reset_list: [ "rst_core_ni" ],
+   bus_interfaces: [
+     { protocol: "reg_iface", direction: "device" }
+   ],
+diff --git a/rtl/spi_host.sv b/rtl/spi_host.sv
+index 03fb4423e..ca205d54b 100644
+--- a/rtl/spi_host.sv
++++ b/rtl/spi_host.sv
+@@ -39,8 +39,8 @@ module spi_host
+   spi_host_reg2hw_t reg2hw;
+   spi_host_hw2reg_t hw2reg;
+ 
+-  reg_req_t fifo_win_h2d [2];
+-  reg_rsp_t fifo_win_d2h [2];
++  reg_req_t [1:0] fifo_win_h2d;
++  reg_rsp_t [1:0] fifo_win_d2h;
+ 
+   // Register module
+   spi_host_reg_top #(
+-- 
+2.16.5
+

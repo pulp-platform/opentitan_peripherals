@@ -5,8 +5,6 @@
   name:               "spi_host",
   clock_primary: "clk_i",
   other_clock_list: [ "clk_core_i" ],
-  reset_primary: "rst_ni",
-  other_reset_list: [ "rst_core_ni" ],
   bus_interfaces: [
     { protocol: "reg_iface", direction: "device" }
   ],

@@ -39,8 +39,8 @@ module spi_host
   spi_host_reg2hw_t reg2hw;
   spi_host_hw2reg_t hw2reg;
 
-  reg_req_t fifo_win_h2d [2];
-  reg_rsp_t fifo_win_d2h [2];
+  reg_req_t [1:0] fifo_win_h2d;
+  reg_rsp_t [1:0] fifo_win_d2h;
 
   // Register module
   spi_host_reg_top #(
