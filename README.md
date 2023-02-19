@@ -16,9 +16,6 @@ To simplify IP reconfiguration in your project, you can include the GNU Make fra
 ```make
 include $(shell bender path opentitan_peripherals)/otp.mk
 
-# Alternative PLIC parameters
-PLICOPT = -s 22 -t 1 -p 7
-
 # Alternative SPI host register config
 $(OTPROOT)/src/spi_host/data/spi_host.hjson: config/spi_host.json
     cp $< $@
