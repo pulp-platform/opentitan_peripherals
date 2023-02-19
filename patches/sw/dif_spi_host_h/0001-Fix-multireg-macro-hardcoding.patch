@@ -1,0 +1,50 @@
+From 1b14c2362c0dbfdfdd435308e34e7f6b42095cf3 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Sun, 19 Feb 2023 19:26:29 +0100
+Subject: [PATCH] Fix multireg macro hardcoding
+
+---
+ dif_spi_host.h | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/dif_spi_host.h b/dif_spi_host.h
+index d27b1a29f..3c645b38b 100644
+--- a/dif_spi_host.h
++++ b/dif_spi_host.h
+@@ -139,14 +139,32 @@ typedef struct dif_spi_host_segment {
+   };
+ } dif_spi_host_segment_t;
+ 
++
+ /**
+- * Configures SPI Host with runtime information.
++ * Configures one chip select of SPI host with runtime information.
+  *
+  * This function should only need to be called once for the lifetime of
+  * `handle`.
+  *
+  * @param spi_host A SPI Host handle.
+  * @param config Runtime configuration parameters.
++ * @param csid The addressed chip select.
++ * @return The result of the operation.
++ */
++OT_WARN_UNUSED_RESULT
++dif_result_t dif_spi_host_configure_cs(const dif_spi_host_t *spi_host,
++                                       dif_spi_host_config_t config,
++                                       uint32_t csid);
++
++
++/**
++ * Configures SPI Host with runtime information.
++ *
++ * This function should only need to be called once for the lifetime of
++ * `handle`. Note that this only initializes chip select 0!
++ *
++ * @param spi_host A SPI Host handle.
++ * @param config Runtime configuration parameters.
+  * @return The result of the operation.
+  */
+ OT_WARN_UNUSED_RESULT
+-- 
+2.16.5
+

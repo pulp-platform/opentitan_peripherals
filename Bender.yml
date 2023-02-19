@@ -53,9 +53,9 @@ vendor_package:
       - {from: 'sw/device/lib/dif/dif_gpio.h', to: 'sw/device/lib/dif/dif_gpio.h'}
       - {from: 'sw/device/lib/dif/dif_i2c.c', to: 'sw/device/lib/dif/dif_i2c.c'}
       - {from: 'sw/device/lib/dif/dif_i2c.h', to: 'sw/device/lib/dif/dif_i2c.h'}
-      - {from: 'sw/device/lib/dif/dif_spi_host.c', to: 'sw/device/lib/dif/dif_spi_host.c'}
-      - {from: 'sw/device/lib/dif/dif_spi_host.h', to: 'sw/device/lib/dif/dif_spi_host.h'}
-      - {from: 'sw/device/lib/dif/dif_rv_plic.c', to: 'sw/device/lib/dif/dif_rv_plic.c'}
+      - {from: 'sw/device/lib/dif/dif_spi_host.c', to: 'sw/device/lib/dif/dif_spi_host.c', patch_dir: 'sw/dif_spi_host_c'}
+      - {from: 'sw/device/lib/dif/dif_spi_host.h', to: 'sw/device/lib/dif/dif_spi_host.h', patch_dir: 'sw/dif_spi_host_h'}
+      - {from: 'sw/device/lib/dif/dif_rv_plic.c', to: 'sw/device/lib/dif/dif_rv_plic.c', patch_dir: 'sw/dif_rv_plic_c'}
       - {from: 'sw/device/lib/dif/dif_rv_plic.h', to: 'sw/device/lib/dif/dif_rv_plic.h'}
       # Utilities
       - {from: 'util/ipgen', to: 'util/ipgen', patch_dir: 'ipgen'}

@@ -139,11 +139,29 @@ typedef struct dif_spi_host_segment {
   };
 } dif_spi_host_segment_t;
 
+
+/**
+ * Configures one chip select of SPI host with runtime information.
+ *
+ * This function should only need to be called once for the lifetime of
+ * `handle`.
+ *
+ * @param spi_host A SPI Host handle.
+ * @param config Runtime configuration parameters.
+ * @param csid The addressed chip select.
+ * @return The result of the operation.
+ */
+OT_WARN_UNUSED_RESULT
+dif_result_t dif_spi_host_configure_cs(const dif_spi_host_t *spi_host,
+                                       dif_spi_host_config_t config,
+                                       uint32_t csid);
+
+
 /**
  * Configures SPI Host with runtime information.
  *
  * This function should only need to be called once for the lifetime of
- * `handle`.
+ * `handle`. Note that this only initializes chip select 0!
  *
  * @param spi_host A SPI Host handle.
  * @param config Runtime configuration parameters.

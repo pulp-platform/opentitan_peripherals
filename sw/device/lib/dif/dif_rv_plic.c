@@ -56,7 +56,12 @@ static uint8_t plic_irq_bit_index(dif_rv_plic_irq_id_t irq) {
  */
 static ptrdiff_t plic_irq_enable_base_for_target(dif_rv_plic_target_t target) {
   ptrdiff_t range = RV_PLIC_IE0_MULTIREG_COUNT * sizeof(uint32_t);
-  return RV_PLIC_IE0_0_REG_OFFSET + (range * target);
+#if RV_PLIC_IE0_MULTIREG_COUNT == 1
+  uint32_t reg_offset = RV_PLIC_IE0_REG_OFFSET;
+#else
+  uint32_t reg_offset = RV_PLIC_IE0_0_REG_OFFSET;
+#endif
+  return reg_offset + (range * target);
 }
 
 /**
@@ -99,8 +104,13 @@ static plic_reg_info_t plic_irq_enable_reg_info(dif_rv_plic_irq_id_t irq,
  */
 static plic_reg_info_t plic_irq_pending_reg_info(dif_rv_plic_irq_id_t irq) {
   ptrdiff_t offset = plic_offset_from_reg0(irq);
+#if RV_PLIC_IP_MULTIREG_COUNT == 1
+  uint32_t reg_offset = RV_PLIC_IP_REG_OFFSET;
+#else
+  uint32_t reg_offset = RV_PLIC_IP_0_REG_OFFSET;
+#endif
   return (plic_reg_info_t){
-      .offset = RV_PLIC_IP_0_REG_OFFSET + offset,
+      .offset = reg_offset + offset,
       .bit_index = plic_irq_bit_index(irq),
   };
 }

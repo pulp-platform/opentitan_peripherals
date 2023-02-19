@@ -62,8 +62,10 @@ static void spi_host_enable(const dif_spi_host_t *spi_host, bool enable) {
       bitfield_bit32_write(0, SPI_HOST_CONTROL_SPIEN_BIT, enable));
 }
 
-dif_result_t dif_spi_host_configure(const dif_spi_host_t *spi_host,
-                                    dif_spi_host_config_t config) {
+
+dif_result_t dif_spi_host_configure_cs(const dif_spi_host_t *spi_host,
+                                    dif_spi_host_config_t config,
+                                    uint32_t csid) {
   if (spi_host == NULL) {
     return kDifBadArg;
   }
@@ -71,27 +73,57 @@ dif_result_t dif_spi_host_configure(const dif_spi_host_t *spi_host,
     return kDifBadArg;
   }
 
+#if RV_PLIC_IE0_MULTIREG_COUNT == 1
+    bitfield_field32_t clkdiv_field   = SPI_HOST_CONFIGOPTS_CLKDIV_0_FIELD;
+    bitfield_field32_t csnidle_field  = SPI_HOST_CONFIGOPTS_CSNIDLE_0_FIELD;
+    bitfield_field32_t csntrail_field = SPI_HOST_CONFIGOPTS_CSNTRAIL_0_FIELD;
+    bitfield_field32_t csnlead_field  = SPI_HOST_CONFIGOPTS_CSNLEAD_0_FIELD;
+    uint32_t clkdiv_mask    = SPI_HOST_CONFIGOPTS_CLKDIV_0_MASK;
+    uint32_t fullcyc_bit    = SPI_HOST_CONFIGOPTS_FULLCYC_0_BIT;
+    uint32_t cpha_bit       = SPI_HOST_CONFIGOPTS_CPHA_0_BIT;
+    uint32_t cpol_bit       = SPI_HOST_CONFIGOPTS_CPOL_0_BIT;
+    uint32_t reg_offset     = SPI_HOST_CONFIGOPTS_REG_OFFSET + 4*csid;
+#else
+    bitfield_field32_t clkdiv_field   = SPI_HOST_CONFIGOPTS_0_CLKDIV_0_FIELD;
+    bitfield_field32_t csnidle_field  = SPI_HOST_CONFIGOPTS_0_CSNIDLE_0_FIELD;
+    bitfield_field32_t csntrail_field = SPI_HOST_CONFIGOPTS_0_CSNTRAIL_0_FIELD;
+    bitfield_field32_t csnlead_field  = SPI_HOST_CONFIGOPTS_0_CSNLEAD_0_FIELD;
+    uint32_t clkdiv_mask    = SPI_HOST_CONFIGOPTS_0_CLKDIV_0_MASK;
+    uint32_t fullcyc_bit    = SPI_HOST_CONFIGOPTS_0_FULLCYC_0_BIT;
+    uint32_t cpha_bit       = SPI_HOST_CONFIGOPTS_0_CPHA_0_BIT;
+    uint32_t cpol_bit       = SPI_HOST_CONFIGOPTS_0_CPOL_0_BIT;
+    uint32_t reg_offset     = SPI_HOST_CONFIGOPTS_0_REG_OFFSET + 4*csid;
+#endif
+
   uint32_t divider =
       ((config.peripheral_clock_freq_hz / config.spi_clock) / 2) - 1;
-  if (divider & ~SPI_HOST_CONFIGOPTS_CLKDIV_0_MASK) {
+  if (divider & ~clkdiv_mask) {
     return kDifBadArg;
   }
 
   spi_host_reset(spi_host);
   uint32_t reg = 0;
   reg =
-      bitfield_field32_write(reg, SPI_HOST_CONFIGOPTS_CLKDIV_0_FIELD, divider);
-  reg = bitfield_field32_write(reg, SPI_HOST_CONFIGOPTS_CSNIDLE_0_FIELD,
+      bitfield_field32_write(reg, clkdiv_field, divider);
+  reg = bitfield_field32_write(reg, csnidle_field,
                                config.chip_select.idle);
-  reg = bitfield_field32_write(reg, SPI_HOST_CONFIGOPTS_CSNTRAIL_0_FIELD,
+  reg = bitfield_field32_write(reg, csntrail_field,
                                config.chip_select.trail);
-  reg = bitfield_field32_write(reg, SPI_HOST_CONFIGOPTS_CSNLEAD_0_FIELD,
+  reg = bitfield_field32_write(reg, csnlead_field,
                                config.chip_select.lead);
-  reg = bitfield_bit32_write(reg, SPI_HOST_CONFIGOPTS_FULLCYC_0_BIT,
+  reg = bitfield_bit32_write(reg, fullcyc_bit,
                              config.full_cycle);
-  reg = bitfield_bit32_write(reg, SPI_HOST_CONFIGOPTS_CPHA_0_BIT, config.cpha);
-  reg = bitfield_bit32_write(reg, SPI_HOST_CONFIGOPTS_CPOL_0_BIT, config.cpol);
-  mmio_region_write32(spi_host->base_addr, SPI_HOST_CONFIGOPTS_REG_OFFSET, reg);
+  reg = bitfield_bit32_write(reg, cpha_bit, config.cpha);
+  reg = bitfield_bit32_write(reg, cpol_bit, config.cpol);
+  mmio_region_write32(spi_host->base_addr, reg_offset, reg);
+
+  return kDifOk;
+}
+
+dif_result_t dif_spi_host_configure(const dif_spi_host_t *spi_host,
+                                    dif_spi_host_config_t config) {
+  dif_result_t cs_res = dif_spi_host_configure_cs(spi_host, config, 0);
+  if (cs_res != kDifOk) return cs_res;
   spi_host_enable(spi_host, true);
   return kDifOk;
 }
