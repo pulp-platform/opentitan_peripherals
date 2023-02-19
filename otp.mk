@@ -51,9 +51,11 @@ otp_spi_host: $(OTPROOT)/src/spi_host/data/spi_host.hjson $(REGTOOL)
 	$(REGTOOL) -r -t $(OTPROOT)/src/spi_host/rtl $<
 
 # Generate software for peripherals
-OTP_SW_DIR  = $(OTPROOT)/sw
-OTP_SOURCES = $(wildcard $(OTP_SW_DIR)/**/*.c)
-OTP_REG_DIR = $(OTP_SW_DIR)/include
+OTP_SW_DIR   = $(OTPROOT)/sw
+OTP_SOURCES  = $(wildcard $(OTP_SW_DIR)/device/lib/base/*.c)
+OTP_SOURCES += $(wildcard $(OTP_SW_DIR)/device/lib/dif/*.c)
+OTP_SOURCES += $(wildcard $(OTP_SW_DIR)/device/lib/dif/autogen/*.c)
+OTP_REG_DIR  = $(OTP_SW_DIR)/include
 
 define hdr_gen_rule
 OTP_REG_HDRS += $$(OTP_REG_DIR)/$(1)_regs.h
