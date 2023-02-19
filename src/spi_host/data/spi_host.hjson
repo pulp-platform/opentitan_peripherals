@@ -3,25 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 {
   name:               "spi_host",
-  one_line_desc:      "Serial peripheral interface for host mode, suitable for interfacing external serial NOR flash devices",
-  design_spec:        "../doc",
-  dv_doc:             "../doc/dv",
-  hw_checklist:       "../doc/checklist",
-  sw_checklist:       "/sw/device/lib/dif/dif_spi_host",
-  revisions: [
-    {
-      version:            "1.0",
-      life_stage:         "L1",
-      design_stage:       "D2S",
-      verification_stage: "V2S",
-      dif_stage:          "S2",
-    }
-  ]
-  clocking: [
-    {clock: "clk_i", reset: "rst_ni", primary: true},
-  ]
+  clock_primary: "clk_i",
+  other_clock_list: [ "clk_core_i" ],
   bus_interfaces: [
-    { protocol: "tlul", direction: "device" }
+    { protocol: "reg_iface", direction: "device" }
   ],
   inter_signal_list: [
     { struct:  "passthrough",
@@ -47,7 +32,7 @@
     { name: "NumCS",
       desc: "The number of active-low chip select (cs_n) lines to create.",
       type: "int",
-      default: "1"
+      default: "2"
     },
     { name: "TxDepth",
       desc: "The size of the Tx FIFO (in words)",
@@ -97,11 +82,6 @@
       '''
     }
   ],
-  countermeasures: [
-    { name: "BUS.INTEGRITY",
-      desc: "End-to-end bus integrity scheme."
-    }
-  ]
   registers: [
     { name: "CONTROL",
       desc: "Control register",

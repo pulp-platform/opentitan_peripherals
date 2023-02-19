@@ -5,6 +5,8 @@
 // Core Implemenation module for Serial Peripheral Interface (SPI) Host IP.
 //
 
+`include "common_cells/assertions.svh"
+
 module spi_host_fsm
   import spi_host_cmd_pkg::*;
 #(
@@ -564,7 +566,8 @@ module spi_host_fsm
     end else begin
       unique case (speed_o)
         Standard: begin
-          sd_en_o[0]   = 1'b1;
+          // TODO @paulsc: We fixed this from 1'b1 before; is this fix still valid?
+          sd_en_o[0]   = cmd_wr_en_q;
           sd_en_o[1]   = 1'b0;
           sd_en_o[3:2] = 2'b00;
         end
@@ -587,10 +590,8 @@ module spi_host_fsm
   // Assertions confirming valid user input.
   //
 
-  `ASSERT(BidirOnlyInStdMode_A,
-      cmd_speed_d == Standard || !(cmd_rd_en_d && cmd_wr_en_d),
-      clk_i, rst_ni)
-  `ASSERT(ValidSpeed_A, cmd_speed_d != RsvdSpd, clk_i, rst_ni)
-  `ASSERT(ValidCSID_A, csid < NumCS, clk_i, rst_ni)
+  `ASSERT(BidirOnlyInStdMode_A, $isunknown(rst_ni) || (cmd_speed_d == Standard || !(cmd_rd_en_d && cmd_wr_en_d)), clk_i, rst_ni)
+  `ASSERT(ValidSpeed_A, $isunknown(rst_ni) || (cmd_speed_d != RsvdSpd), clk_i, rst_ni)
+  `ASSERT(ValidCSID_A, $isunknown(rst_ni) || (csid < NumCS), clk_i, rst_ni)
 
 endmodule

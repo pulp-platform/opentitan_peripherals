@@ -4,24 +4,9 @@
 
 {
   name:               "i2c",
-  one_line_desc:      "I2C interface for host and device mode, supporting up to 1 Mbaud data rates",
-  design_spec:        "../doc",
-  dv_doc:             "../doc/dv",
-  hw_checklist:       "../doc/checklist",
-  sw_checklist:       "/sw/device/lib/dif/dif_i2c",
-  revisions: [
-    {
-      version:            "1.0",
-      life_stage:         "L1",
-      design_stage:       "D2S",
-      verification_stage: "V1",
-      dif_stage:          "S2",
-      notes:              ""
-    }
-  ]
-  clocking: [{clock: "clk_i", reset: "rst_ni"}],
+  clock_primary: "clk_i"
   bus_interfaces: [
-    { protocol: "tlul", direction: "device" }
+    { protocol: "reg_iface", direction: "device" }
   ],
   // INPUT pins
   available_inout_list: [
@@ -66,14 +51,12 @@
     }
     { name: "tx_stretch"
       desc: "target mode interrupt: raised if the target is stretching clocks for a read command.  This is a level status interrupt."
-      type: "status"
     }
     { name: "tx_overflow"
       desc: "target mode interrupt: raised if TX FIFO has overflowed."
     }
     { name: "acq_full"
       desc: "target mode interrupt: raised if ACQ FIFO becomes full.  This is a level status interrupt."
-      type: "status"
     }
     { name: "unexp_stop"
       desc: "target mode interrupt: raised if STOP is received without a preceding NACK during an external host read."
@@ -96,11 +79,6 @@
       default: "64",
     }
   ],
-  countermeasures: [
-    { name: "BUS.INTEGRITY",
-      desc: "End-to-end bus integrity scheme."
-    }
-  ]
 
   // REGISTER definition
   regwidth: "32"

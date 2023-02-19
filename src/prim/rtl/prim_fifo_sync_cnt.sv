@@ -4,7 +4,7 @@
 //
 // Generic synchronous fifo for use in a variety of devices.
 
-`include "prim_assert.sv"
+`include "common_cells/assertions.svh"
 
 module prim_fifo_sync_cnt #(
   parameter int Depth = 4,
