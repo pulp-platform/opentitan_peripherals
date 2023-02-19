@@ -14,5 +14,7 @@
     exclude_paths: [
         # Exclude matchers
         .github/*-matcher.json
+        # Generated headers have alternate license format
+        sw/include/*_regs.h
     ],
 }
