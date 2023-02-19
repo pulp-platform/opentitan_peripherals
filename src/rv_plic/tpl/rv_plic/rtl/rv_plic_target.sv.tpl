@@ -12,7 +12,7 @@
 // many input sources.
 //
 
-`include "common_cells/assertions.svh"
+`include "prim_assert.sv"
 
 module ${module_instance_name}_target #(
   parameter int N_SOURCE = 32,

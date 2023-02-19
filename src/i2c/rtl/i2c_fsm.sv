@@ -4,8 +4,6 @@
 //
 // Description: I2C finite state machine
 
-`include "common_cells/assertions.svh"
-
 module i2c_fsm import i2c_pkg::*;
 #(
   parameter int FifoDepth = 64,

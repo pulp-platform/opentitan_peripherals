@@ -14,7 +14,7 @@
 // Under the hood, this module uses a prim_sync_reqack primitive for synchronizing the
 // REQ/ACK handshake. See prim_sync_reqack.sv for more details.
 
-`include "common_cells/assertions.svh"
+`include "prim_assert.sv"
 
 module prim_sync_reqack_data #(
   parameter int unsigned Width       = 1,

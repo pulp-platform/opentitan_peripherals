@@ -14,7 +14,7 @@
 // be equal to the input value at index 0.
 
 
-`include "common_cells/assertions.svh"
+`include "prim_assert.sv"
 
 module prim_max_tree #(
   parameter int NumSrc = 32,

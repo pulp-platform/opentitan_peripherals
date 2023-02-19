@@ -3,9 +3,33 @@
 // SPDX-License-Identifier: Apache-2.0
 {
   name:               "gpio",
-  clock_primary: "clk_i",
+  one_line_desc:      "General-purpose I/O pin control interface for software",
+  design_spec:        "../doc",
+  dv_doc:             "../doc/dv",
+  hw_checklist:       "../doc/checklist",
+  sw_checklist:       "/sw/device/lib/dif/dif_gpio",
+  revisions: [
+    {
+      version:            "1.0",
+      life_stage:         "L2",
+      design_stage:       "D3",
+      verification_stage: "V3",
+      commit_id:          "c1be7eb2b7265cd5ba6ceb026c28acf8e371151a",
+      notes:              "",
+    }
+    {
+      version:            "1.1",
+      life_stage:         "L1",
+      design_stage:       "D3",
+      verification_stage: "V2",
+      dif_stage:          "S2",
+      commit_id:          "9a2fd04f5e1f36128c858d6a1a7b06c34681337c"
+      notes:              ""
+    }
+  ]
+  clocking: [{clock: "clk_i", reset: "rst_ni"}],
   bus_interfaces: [
-    { protocol: "reg_iface", direction: "device" }
+    { protocol: "tlul", direction: "device" }
   ],
   available_inout_list: [
     { name: "gpio",
@@ -17,6 +41,7 @@
     { name: "gpio",
       width: 32,
       desc: "raised if any of GPIO pin detects configured interrupt mode"
+      auto_split: "true"
     }
   ],
   alert_list: [
@@ -36,6 +61,11 @@
       local:   "false",
       expose:  "true"
     },
+  ]
+  countermeasures: [
+    { name: "BUS.INTEGRITY",
+      desc: "End-to-end bus integrity scheme."
+    }
   ]
 
   regwidth: "32",
@@ -147,6 +177,7 @@
       hwqe: "true",
       fields: [
         { bits: "31:0",
+          auto_split: "true"
         }
       ],
     },

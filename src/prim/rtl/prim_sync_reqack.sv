@@ -29,7 +29,7 @@
 // For further information, see Section 8.2.4 in H. Kaeslin, "Top-Down Digital VLSI Design: From
 // Architecture to Gate-Level Circuits and FPGAs", 2015.
 
-`include "common_cells/assertions.svh"
+`include "prim_assert.sv"
 
 module prim_sync_reqack #(
   parameter bit EnRstChks = 1'b0,   // Enable reset-related assertion checks, disabled by default.

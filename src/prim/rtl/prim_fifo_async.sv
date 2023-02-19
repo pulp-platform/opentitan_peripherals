@@ -4,7 +4,7 @@
 //
 // Generic asynchronous fifo for use in a variety of devices.
 
-`include "common_cells/assertions.svh"
+`include "prim_assert.sv"
 
 module prim_fifo_async #(
   parameter  int unsigned Width  = 16,
