@@ -26,7 +26,7 @@ vendor_package:
       - {from: 'hw/ip/spi_host', to: 'src/spi_host', patch_dir: 'spi_host'}
       - {from: 'hw/ip_templates/rv_plic/data', to: 'src/rv_plic/tpl/rv_plic/data', patch_dir: 'rv_plic/tpl/data'}
       - {from: 'hw/ip_templates/rv_plic/rtl', to: 'src/rv_plic/tpl/rv_plic/rtl', patch_dir: 'rv_plic/tpl/rtl'}
-      # Software
+      # Software dependencies
       - {from: 'sw/device/lib/base/internal', to: 'sw/device/lib/base/internal'}
       - {from: 'sw/device/lib/base/macros.h', to: 'sw/device/lib/base/macros.h'}
       - {from: 'sw/device/lib/base/multibits.h', to: 'sw/device/lib/base/multibits.h'}
@@ -48,6 +48,15 @@ vendor_package:
       - {from: 'sw/device/lib/dif/autogen/dif_spi_host_autogen.h', to: 'sw/device/lib/dif/autogen/dif_spi_host_autogen.h'}
       - {from: 'sw/device/lib/dif/autogen/dif_rv_plic_autogen.c', to: 'sw/device/lib/dif/autogen/dif_rv_plic_autogen.c'}
       - {from: 'sw/device/lib/dif/autogen/dif_rv_plic_autogen.h', to: 'sw/device/lib/dif/autogen/dif_rv_plic_autogen.h'}
+      # Main DIFs
+      - {from: 'sw/device/lib/dif/dif_gpio.c', to: 'sw/device/lib/dif/dif_gpio.c'}
+      - {from: 'sw/device/lib/dif/dif_gpio.h', to: 'sw/device/lib/dif/dif_gpio.h'}
+      - {from: 'sw/device/lib/dif/dif_i2c.c', to: 'sw/device/lib/dif/dif_i2c.c'}
+      - {from: 'sw/device/lib/dif/dif_i2c.h', to: 'sw/device/lib/dif/dif_i2c.h'}
+      - {from: 'sw/device/lib/dif/dif_spi_host.c', to: 'sw/device/lib/dif/dif_spi_host.c'}
+      - {from: 'sw/device/lib/dif/dif_spi_host.h', to: 'sw/device/lib/dif/dif_spi_host.h'}
+      - {from: 'sw/device/lib/dif/dif_rv_plic.c', to: 'sw/device/lib/dif/dif_rv_plic.c'}
+      - {from: 'sw/device/lib/dif/dif_rv_plic.h', to: 'sw/device/lib/dif/dif_rv_plic.h'}
       # Utilities
       - {from: 'util/ipgen', to: 'util/ipgen', patch_dir: 'ipgen'}
       - {from: 'util/ipgen.py', to: 'util/ipgen.py'}
