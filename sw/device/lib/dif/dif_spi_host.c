@@ -56,12 +56,19 @@ static void spi_host_reset(const dif_spi_host_t *spi_host) {
       bitfield_bit32_write(0, SPI_HOST_CONTROL_SW_RST_BIT, false));
 }
 
+void dif_spi_host_reset(const dif_spi_host_t *spi_host) {
+  spi_host_reset(spi_host);
+}
+
 static void spi_host_enable(const dif_spi_host_t *spi_host, bool enable) {
   mmio_region_write32(
       spi_host->base_addr, SPI_HOST_CONTROL_REG_OFFSET,
       bitfield_bit32_write(0, SPI_HOST_CONTROL_SPIEN_BIT, enable));
 }
 
+void dif_spi_host_enable(const dif_spi_host_t *spi_host, bool enable) {
+  spi_host_enable(spi_host, enable);
+}
 
 dif_result_t dif_spi_host_configure_cs(const dif_spi_host_t *spi_host,
                                     dif_spi_host_config_t config,
@@ -101,7 +108,6 @@ dif_result_t dif_spi_host_configure_cs(const dif_spi_host_t *spi_host,
     return kDifBadArg;
   }
 
-  spi_host_reset(spi_host);
   uint32_t reg = 0;
   reg =
       bitfield_field32_write(reg, clkdiv_field, divider);
@@ -122,6 +128,7 @@ dif_result_t dif_spi_host_configure_cs(const dif_spi_host_t *spi_host,
 
 dif_result_t dif_spi_host_configure(const dif_spi_host_t *spi_host,
                                     dif_spi_host_config_t config) {
+  spi_host_reset(spi_host);
   dif_result_t cs_res = dif_spi_host_configure_cs(spi_host, config, 0);
   if (cs_res != kDifOk) return cs_res;
   spi_host_enable(spi_host, true);

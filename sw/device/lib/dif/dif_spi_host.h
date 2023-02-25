@@ -140,6 +140,11 @@ typedef struct dif_spi_host_segment {
 } dif_spi_host_segment_t;
 
 
+// Additionally exposed internal functions
+void dif_spi_host_reset(const dif_spi_host_t *spi_host);
+
+void dif_spi_host_enable(const dif_spi_host_t *spi_host, bool enable);
+
 /**
  * Configures one chip select of SPI host with runtime information.
  *
