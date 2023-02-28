@@ -226,6 +226,21 @@ dif_result_t dif_spi_host_transaction(const dif_spi_host_t *spi_host,
                                       dif_spi_host_segment_t *segments,
                                       size_t length);
 
+/**
+ * Begins a SPI Host transaction *without* de-asserting CS at the end.
+ *
+ * @param spi_host A SPI Host handle.
+ * @param csid The chip-select ID of the SPI target.
+ * @param segments The SPI segments to send in this transaction.
+ * @param length The number of SPI segments in this transaction.
+ * @return The result of the operation.
+ */
+OT_WARN_UNUSED_RESULT
+dif_result_t dif_spi_host_transaction_csaat(const dif_spi_host_t *spi_host,
+                                            uint32_t csid,
+                                            dif_spi_host_segment_t *segments,
+                                            size_t length);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

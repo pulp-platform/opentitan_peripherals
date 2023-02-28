@@ -395,17 +395,19 @@ static dif_result_t issue_data_phase(const dif_spi_host_t *spi_host,
   return kDifOk;
 }
 
-dif_result_t dif_spi_host_transaction(const dif_spi_host_t *spi_host,
+static inline dif_result_t spi_host_transaction(const dif_spi_host_t *spi_host,
                                       uint32_t csid,
                                       dif_spi_host_segment_t *segments,
-                                      size_t length) {
+                                      size_t length,
+                                      int csaat) {
   // Write to chip select ID.
   mmio_region_write32(spi_host->base_addr, SPI_HOST_CSID_REG_OFFSET, csid);
 
   // For each segment, write the segment information to the
   // COMMAND register and transmit FIFO.
   for (size_t i = 0; i < length; ++i) {
-    bool last_segment = i == length - 1;
+    // Only signal last segment if CSAAT is not requested
+    bool last_segment = !csaat && (i == length - 1);
     wait_ready(spi_host);
     dif_spi_host_segment_t *segment = &segments[i];
     switch (segment->type) {
@@ -448,4 +450,19 @@ dif_result_t dif_spi_host_transaction(const dif_spi_host_t *spi_host,
     }
   }
   return kDifOk;
+}
+
+dif_result_t dif_spi_host_transaction(const dif_spi_host_t *spi_host,
+                                      uint32_t csid,
+                                      dif_spi_host_segment_t *segments,
+                                      size_t length) {
+  return spi_host_transaction(spi_host, csid, segments, length, 0);
+}
+
+
+dif_result_t dif_spi_host_transaction_csaat(const dif_spi_host_t *spi_host,
+                                            uint32_t csid,
+                                            dif_spi_host_segment_t *segments,
+                                            size_t length) {
+  return spi_host_transaction(spi_host, csid, segments, length, 1);
 }

@@ -1,0 +1,38 @@
+From 2b4328af35cf78de35387af971b6879e5f6e2cdc Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Tue, 28 Feb 2023 23:29:20 +0100
+Subject: [PATCH] Add CSAAT transaction function
+
+---
+ dif_spi_host.h | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/dif_spi_host.h b/dif_spi_host.h
+index 157c2c38c..21092d76a 100644
+--- a/dif_spi_host.h
++++ b/dif_spi_host.h
+@@ -226,6 +226,21 @@ dif_result_t dif_spi_host_transaction(const dif_spi_host_t *spi_host,
+                                       dif_spi_host_segment_t *segments,
+                                       size_t length);
+ 
++/**
++ * Begins a SPI Host transaction *without* de-asserting CS at the end.
++ *
++ * @param spi_host A SPI Host handle.
++ * @param csid The chip-select ID of the SPI target.
++ * @param segments The SPI segments to send in this transaction.
++ * @param length The number of SPI segments in this transaction.
++ * @return The result of the operation.
++ */
++OT_WARN_UNUSED_RESULT
++dif_result_t dif_spi_host_transaction_csaat(const dif_spi_host_t *spi_host,
++                                            uint32_t csid,
++                                            dif_spi_host_segment_t *segments,
++                                            size_t length);
++
+ #ifdef __cplusplus
+ }  // extern "C"
+ #endif  // __cplusplus
+-- 
+2.16.5
+
