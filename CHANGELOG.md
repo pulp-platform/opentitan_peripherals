@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## 0.3.0 - 2023-03-28
+### Fixed
+- Rebase all hardware to upstream and readapt.
+- Add vendored software DIFs for use in dependent projects and adapt.
+
 ## 0.2.1 - 2023-01-30
 ### Fixed
 - Eliminate duplicate entry in Bender manifest.
