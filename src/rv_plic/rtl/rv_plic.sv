@@ -19,6 +19,12 @@
 module rv_plic import rv_plic_reg_pkg::*; #(
   parameter type reg_req_t = logic,
   parameter type reg_rsp_t = logic,
+  // OpenTitan IP standardizes on level triggered interrupts,
+  // hence LevelEdgeTrig is set to all-zeroes by default.
+  // Note that in case of edge-triggered interrupts, CDC handling is not
+  // fully implemented yet (this would require instantiating pulse syncs
+  // and routing the source clocks / resets to the PLIC).
+  parameter logic [NumSrc-1:0]    LevelEdgeTrig = '0, // 0: level, 1: edge
   // derived parameter
   localparam int SRCW    = $clog2(NumSrc)
 ) (
@@ -45,7 +51,6 @@ module rv_plic import rv_plic_reg_pkg::*; #(
   localparam int MAX_PRIO    = 7;
   localparam int PRIOW = $clog2(MAX_PRIO+1);
 
-  logic [NumSrc-1:0] le; // 0:level 1:edge
   logic [NumSrc-1:0] ip;
 
   logic [NumSrc-1:0] ie [NumTarget];
@@ -60,7 +65,7 @@ module rv_plic import rv_plic_reg_pkg::*; #(
 
   logic [SRCW-1:0]      cc_id [NumTarget]; // Write ID
 
-  logic [PRIOW-1:0] prio [NumSrc];
+  logic [NumSrc-1:0][PRIOW-1:0] prio;
 
   logic [PRIOW-1:0] threshold [NumTarget];
 
@@ -157,24 +162,29 @@ module rv_plic import rv_plic_reg_pkg::*; #(
     assign hw2reg.ip[s].d  = ip[s];
   end
 
-  ///////////////////////////////////
-  // Detection:: 0: Level, 1: Edge //
-  ///////////////////////////////////
-  for (genvar s = 0; s < 32; s++) begin : gen_le
-    assign le[s] = reg2hw.le[s].q;
-  end
-
   //////////////
   // Gateways //
   //////////////
+
+  // Synchronize all incoming interrupt requests.
+  logic [NumSrc-1:0] intr_src_synced;
+  prim_flop_2sync #(
+    .Width(NumSrc)
+  ) u_prim_flop_2sync (
+    .clk_i,
+    .rst_ni,
+    .d_i(intr_src_i),
+    .q_o(intr_src_synced)
+  );
+
   rv_plic_gateway #(
     .N_SOURCE   (NumSrc)
   ) u_gateway (
     .clk_i,
     .rst_ni,
 
-    .src_i      (intr_src_i),
-    .le_i       (le),
+    .src_i      (intr_src_synced),
+    .le_i       (LevelEdgeTrig),
 
     .claim_i    (claim),
     .complete_i (complete),
@@ -237,4 +247,3 @@ module rv_plic import rv_plic_reg_pkg::*; #(
   `ASSUME(Irq0Tied_A, intr_src_i[0] == 1'b0)
 
 endmodule
-

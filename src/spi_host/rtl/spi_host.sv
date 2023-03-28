@@ -16,8 +16,6 @@ module spi_host
 ) (
   input              clk_i,
   input              rst_ni,
-  input              clk_core_i,
-  input              rst_core_ni,
 
   // Register interface
   input  reg_req_t reg_req_i,
@@ -41,8 +39,8 @@ module spi_host
   spi_host_reg2hw_t reg2hw;
   spi_host_hw2reg_t hw2reg;
 
-  reg_req_t fifo_win_h2d;
-  reg_rsp_t fifo_win_d2h;
+  reg_req_t [1:0] fifo_win_h2d;
+  reg_rsp_t [1:0] fifo_win_d2h;
 
   // Register module
   spi_host_reg_top #(
@@ -63,8 +61,13 @@ module spi_host
   logic             sck;
   logic [NumCS-1:0] csb;
   logic [3:0]       sd_out;
-  logic [3:0]       sd_en;
+  logic [3:0]       sd_en, sd_en_core;
   logic [3:0]       sd_i;
+  logic             output_en;
+
+  assign output_en = reg2hw.control.output_en;
+
+  assign sd_en     = output_en ? sd_en_core : 4'h0;
 
   assign cio_sck_o    = sck;
   assign cio_sck_en_o = 1'b1;
@@ -171,16 +174,9 @@ module spi_host
   // Any qe pin from COMMAND will suffice.
   assign command_valid = |cmd_qes;
 
-  // TODO: Determine the correct way to trigger a command.
-  // The following assertion confirms that at lease in
-  // some cases, the writes to COMMAND are not atomic.
-  //
-  // Disabling this assertion for now
-  //`ASSERT(CmdAtomicity_A, &cmd_qes ^ |cmd_qes, clk_i, rst_ni);
-
-  logic active, core_active;
-  logic rx_stall, core_rx_stall;
-  logic tx_stall, core_tx_stall;
+  logic active;
+  logic rx_stall;
+  logic tx_stall;
 
   assign hw2reg.status.ready.d    = ~command_busy;
   assign hw2reg.status.active.d   = active;
@@ -192,13 +188,15 @@ module spi_host
   assign hw2reg.status.rxstall.de = 1'b1;
   assign hw2reg.status.txstall.de = 1'b1;
 
-  logic sw_rst, core_sw_rst;
+  logic sw_rst;
 
-  spi_host_command_cdc u_cmd_cdc (
+  logic [3:0]  cmd_qd;
+
+  spi_host_command_queue #(
+    .CmdDepth(CmdDepth)
+  ) u_cmd_queue (
     .clk_i,
     .rst_ni,
-    .clk_core_i,
-    .rst_core_ni,
     .command_i            (command),
     .command_valid_i      (command_valid),
     .command_busy_o       (command_busy),
@@ -206,9 +204,8 @@ module spi_host
     .core_command_valid_o (core_command_valid),
     .core_command_ready_i (core_command_ready),
     .error_busy_o         (error_busy),
-
-    .sw_rst_i             (sw_rst),
-    .core_sw_rst_i        (core_sw_rst)
+    .qd_o                 (cmd_qd),
+    .sw_rst_i             (sw_rst)
   );
 
   logic [31:0] tx_data;
@@ -226,8 +223,10 @@ module spi_host
   ) u_window (
     .clk_i,
     .rst_ni,
-    .win_i      (fifo_win_h2d),
-    .win_o      (fifo_win_d2h),
+    .rx_win_i   (fifo_win_h2d[0]),
+    .rx_win_o   (fifo_win_d2h[0]),
+    .tx_win_i   (fifo_win_h2d[1]),
+    .tx_win_o   (fifo_win_d2h[1]),
     .tx_data_o  (tx_data),
     .tx_be_o    (tx_be),
     .tx_valid_o (tx_valid),
@@ -257,6 +256,7 @@ module spi_host
 
   assign hw2reg.status.txqd.d    = tx_qd;
   assign hw2reg.status.rxqd.d    = rx_qd;
+  assign hw2reg.status.cmdqd.d   = cmd_qd;
   assign hw2reg.status.txwm.d    = tx_wm;
   assign hw2reg.status.rxwm.d    = rx_wm;
   assign hw2reg.status.rxempty.d = rx_empty;
@@ -266,6 +266,7 @@ module spi_host
 
   assign hw2reg.status.txqd.de    = 1'b1;
   assign hw2reg.status.rxqd.de    = 1'b1;
+  assign hw2reg.status.cmdqd.de   = 1'b1;
   assign hw2reg.status.txwm.de    = 1'b1;
   assign hw2reg.status.rxwm.de    = 1'b1;
   assign hw2reg.status.rxempty.de = 1'b1;
@@ -274,30 +275,51 @@ module spi_host
   assign hw2reg.status.txfull.de  = 1'b1;
 
   logic error_overflow, error_underflow;
+  logic error_access_inval;
 
-  // Since the CDC FIFOs are essentially directly connected to SW registers, it is an error if
+  // Since the DATA FIFOs are essentially directly connected to SW registers, it is an error if
   // there is ever a need for flow control.
-  assign error_overflow  = tx_valid & ~tx_ready;
-  assign error_underflow = rx_ready & ~rx_valid;
+  assign error_overflow    = tx_valid & ~tx_ready;
+  assign error_underflow   = rx_ready & ~rx_valid;
+  logic access_valid;
+  assign error_access_inval = tx_valid & ~access_valid;
 
+  always_comb begin
+    unique case (tx_be)
+      4'b1000,
+      4'b0100,
+      4'b0010,
+      4'b0001,
+      4'b1100,
+      4'b0110,
+      4'b0011,
+      4'b1111: begin
+        access_valid = 1'b1;
+      end
+      default: begin
+        access_valid = 1'b0;
+      end
+    endcase
+  end
+
+  logic tx_valid_checked;
+  assign tx_valid_checked = tx_valid & ~error_overflow & ~error_access_inval;
 
   // Note on ByteOrder and ByteSwapping.
-  // ByteOrder == 1 is for Little-Endian transmission (i.e. LSB first), which is acheived by default
-  // with the prim_packer_fifo implementation.  Thus we have to swap if Big-Endian transmission
-  // is required (i.e. if ByteOrder == 0).
-  spi_host_data_cdc #(
+  // ByteOrder == 1 is for Little-Endian transmission (i.e. LSB first), which is acheived by
+  // default with the prim_packer_fifo implementation.  Thus we have to swap if Big-Endian
+  // transmission is required (i.e. if ByteOrder == 0).
+  spi_host_data_fifos #(
     .TxDepth(TxDepth),
     .RxDepth(RxDepth),
     .SwapBytes(~ByteOrder)
-  ) u_data_cdc (
+  ) u_data_fifos (
     .clk_i,
     .rst_ni,
-    .clk_core_i,
-    .rst_core_ni,
 
     .tx_data_i         (tx_data),
     .tx_be_i           (tx_be),
-    .tx_valid_i        (tx_valid),
+    .tx_valid_i        (tx_valid_checked),
     .tx_ready_o        (tx_ready),
     .tx_watermark_i    (tx_watermark),
 
@@ -324,47 +346,27 @@ module spi_host
     .rx_qd_o           (rx_qd),
     .rx_wm_o           (rx_wm),
 
-    .sw_rst_i          (sw_rst),
-    .core_sw_rst_i     (core_sw_rst)
+    .sw_rst_i          (sw_rst)
 );
 
-  // CDCs for a handful of continuous or pulsed control and status signals
   logic en_sw;
   logic enb_error;
-  logic en, core_en;
+  logic en;
 
-  assign en         = en_sw & ~enb_error;
-  assign sw_rst     = reg2hw.control.sw_rst.q;
-  assign en_sw      = reg2hw.control.spien.q;
-
-  prim_flop_2sync #(
-    .Width(3)
-  ) u_sync_stat_from_core (
-    .clk_i,
-    .rst_ni,
-    .d_i      ({core_rx_stall, core_tx_stall, core_active}),
-    .q_o      ({     rx_stall,      tx_stall,      active})
-  );
-
-  prim_flop_2sync #(
-    .Width(2)
-  ) u_sync_en_to_core (
-    .clk_i    (clk_core_i),
-    .rst_ni   (rst_core_ni),
-    .d_i      ({en,      sw_rst}),
-    .q_o      ({core_en, core_sw_rst})
-  );
+  assign en     = en_sw & ~enb_error;
+  assign sw_rst = reg2hw.control.sw_rst.q;
+  assign en_sw  = reg2hw.control.spien.q;
 
   spi_host_core #(
     .NumCS(NumCS)
   ) u_spi_core (
-    .clk_i           (clk_core_i),
-    .rst_ni          (rst_core_ni),
+    .clk_i,
+    .rst_ni,
 
     .command_i       (core_command),
     .command_valid_i (core_command_valid),
     .command_ready_o (core_command_ready),
-    .en_i            (core_en),
+    .en_i            (en),
     .tx_data_i       (core_tx_data),
     .tx_be_i         (core_tx_be),
     .tx_valid_i      (core_tx_valid),
@@ -375,21 +377,22 @@ module spi_host
     .sck_o           (sck),
     .csb_o           (csb),
     .sd_o            (sd_out),
-    .sd_en_o         (sd_en),
+    .sd_en_o         (sd_en_core),
     .sd_i,
-    .rx_stall_o      (core_rx_stall),
-    .tx_stall_o      (core_tx_stall),
-    .sw_rst_i        (core_sw_rst),
-    .active_o        (core_active)
+    .rx_stall_o      (rx_stall),
+    .tx_stall_o      (tx_stall),
+    .sw_rst_i        (sw_rst),
+    .active_o        (active)
   );
 
   logic event_error;
 
-  logic [4:0] error_vec;
-  logic [4:0] error_mask;
-  logic [4:0] sw_error_status;
+  logic [5:0] error_vec;
+  logic [5:0] error_mask;
+  logic [5:0] sw_error_status;
 
   assign error_vec  = {
+      error_access_inval,
       error_csid_inval,
       error_cmd_inval,
       error_underflow,
@@ -397,7 +400,13 @@ module spi_host
       error_busy
   };
 
+  // This mask dictates what classes of error events are to be escalated to error interrupts.
+  // (Assume here that error interrupts will be enabled)
+  // Software generated errors can be configured to _not_ generate error events.
+  // Bus errors (such as invalid write access) always generate error events and therefore
+  // interrupts.
   assign error_mask = {
+      1'b1, // invalid access: always an error event
       reg2hw.error_enable.csidinval.q,
       reg2hw.error_enable.cmdinval.q,
       reg2hw.error_enable.underflow.q,
@@ -405,18 +414,23 @@ module spi_host
       reg2hw.error_enable.cmdbusy.q
   };
 
-  assign hw2reg.error_status.csidinval.d = error_csid_inval;
-  assign hw2reg.error_status.cmdinval.d  = error_cmd_inval;
-  assign hw2reg.error_status.underflow.d = error_underflow;
-  assign hw2reg.error_status.overflow.d  = error_overflow;
-  assign hw2reg.error_status.cmdbusy.d   = error_busy;
+  assign hw2reg.error_status.accessinval.d  = error_access_inval;
+  assign hw2reg.error_status.csidinval.d    = error_csid_inval;
+  assign hw2reg.error_status.cmdinval.d     = error_cmd_inval;
+  assign hw2reg.error_status.underflow.d    = error_underflow;
+  assign hw2reg.error_status.overflow.d     = error_overflow;
+  assign hw2reg.error_status.cmdbusy.d      = error_busy;
 
-  assign hw2reg.error_status.csidinval.de = 1'b1;
-  assign hw2reg.error_status.cmdinval.de  = 1'b1;
-  assign hw2reg.error_status.underflow.de = 1'b1;
-  assign hw2reg.error_status.overflow.de  = 1'b1;
-  assign hw2reg.error_status.cmdbusy.de   = 1'b1;
+  // Write the status register whenever the corresponding event occurs.
+  // Only clear them from software.
+  assign hw2reg.error_status.accessinval.de = error_access_inval;
+  assign hw2reg.error_status.csidinval.de   = error_csid_inval;
+  assign hw2reg.error_status.cmdinval.de    = error_cmd_inval;
+  assign hw2reg.error_status.underflow.de   = error_underflow;
+  assign hw2reg.error_status.overflow.de    = error_overflow;
+  assign hw2reg.error_status.cmdbusy.de     = error_busy;
 
+  assign sw_error_status[5] = reg2hw.error_status.accessinval.q;
   assign sw_error_status[4] = reg2hw.error_status.csidinval.q;
   assign sw_error_status[3] = reg2hw.error_status.cmdinval.q;
   assign sw_error_status[2] = reg2hw.error_status.underflow.q;
@@ -516,7 +530,6 @@ module spi_host
   `ASSERT_KNOWN(CioSckEnKnownO_A, cio_sck_en_o)
   `ASSERT_KNOWN(CioCsbKnownO_A, cio_csb_o)
   `ASSERT_KNOWN(CioCsbEnKnownO_A, cio_csb_en_o)
-  `ASSERT_KNOWN(CioSdKnownO_A, cio_sd_o)
   `ASSERT_KNOWN(CioSdEnKnownO_A, cio_sd_en_o)
   `ASSERT_KNOWN(IntrSpiEventKnownO_A, intr_spi_event_o)
   `ASSERT_KNOWN(IntrErrorKnownO_A, intr_error_o)

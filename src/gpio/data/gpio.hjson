@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 {
-  name: "gpio",
+  name:               "gpio",
   clock_primary: "clk_i",
   bus_interfaces: [
     { protocol: "reg_iface", direction: "device" }
@@ -26,6 +26,17 @@
       '''
     }
   ],
+  param_list: [
+    { name:    "GpioAsyncOn",
+      type:    "bit",
+      default: "1'b1",
+      desc:    '''
+      Instantiates 2-flop synchronizers on all GPIO inputs if set to 1.
+      '''
+      local:   "false",
+      expose:  "true"
+    },
+  ]
 
   regwidth: "32",
   registers: [
@@ -135,7 +146,8 @@
       hwext: "true",
       hwqe: "true",
       fields: [
-        { bits: "31:0" }
+        { bits: "31:0",
+        }
       ],
     },
     { name: "MASKED_OE_LOWER",

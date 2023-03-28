@@ -1,0 +1,56 @@
+From 22aa02a23dfdd0ef14764b72d68cc4bbe0b3c454 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Sun, 19 Feb 2023 13:15:45 +0100
+Subject: [PATCH] Adapt to PULP register_interface
+
+---
+ rv_plic.hjson.tpl | 25 ++-----------------------
+ 1 file changed, 2 insertions(+), 23 deletions(-)
+
+diff --git a/rv_plic.hjson.tpl b/rv_plic.hjson.tpl
+index 4d822352c..54e8437cc 100644
+--- a/rv_plic.hjson.tpl
++++ b/rv_plic.hjson.tpl
+@@ -12,24 +12,9 @@
+ #  - module_instance_name: Module instance name.
+ {
+   name:               "${module_instance_name}",
+-  design_spec:        "../doc",
+-  dv_doc:             "../doc/dv",
+-  hw_checklist:       "../doc/checklist",
+-  sw_checklist:       "/sw/device/lib/dif/dif_${module_instance_name.lower()}",
+-  revisions: [
+-    {
+-      version:            "1.0",
+-      life_stage:         "L1",
+-      design_stage:       "D3",
+-      verification_stage: "V2",
+-      dif_stage:          "S2",
+-      commit_id:          "",
+-      notes:              "Use FPV to perform block level verification.",
+-    }
+-  ],
+-  clocking: [{clock: "clk_i", reset: "rst_ni"}],
++  clock_primary: "clk_i",
+   bus_interfaces: [
+-    { protocol: "tlul", direction: "device" }
++    { protocol: "reg_iface", direction: "device" }
+   ],
+ 
+   param_list: [
+@@ -89,12 +74,6 @@
+     },
+   ]
+ 
+-  countermeasures: [
+-    { name: "BUS.INTEGRITY",
+-      desc: "End-to-end bus integrity scheme."
+-    }
+-  ]
+-
+   regwidth: "32",
+   registers: [
+ % for i in range(src):
+-- 
+2.16.5
+

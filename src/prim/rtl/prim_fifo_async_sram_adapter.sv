@@ -212,14 +212,37 @@ module prim_fifo_async_sram_adapter #(
   // End:   SRAM Read pointer
 
   // Full/ Empty
-  localparam logic [PtrW-1:0] XorMask = PtrW'(1) << (PtrW-1);
+  // Lint complains PtrW'(1) << (PtrW-1). So changed as below
+  localparam logic [PtrW-1:0] XorMask = {1'b 1, {PtrW-1{1'b0}}};
   assign w_full  = (w_wptr_q == (w_rptr   ^ XorMask));
   assign r_full  = (r_wptr   == (r_rptr_q ^ XorMask));
   assign r_empty = (r_wptr   == r_rptr_q);
 
+  logic  unused_r_empty;
+  assign unused_r_empty = r_empty;
+
   assign r_full_o     = r_full;
-  assign r_notempty_o = !r_empty;
   assign w_full_o     = w_full;
+
+  // The notempty status !(wptr == rptr) assert one clock earlier than the
+  // actual `rvalid` signals.
+  //
+  // The reason is due to the SRAM read latency. The module uses SRAM FIFO
+  // interface. When the logic in producer domain pushes entries, the pointer
+  // is increased. This triggers the FIFO logic in the consumer clock domain
+  // fetches data from SRAM.
+  //
+  // The pointer crosses the clock boundary. It takes usually two cycles (in
+  // the consumer side). Then, as the read and write pointer in the read clock
+  // domain has a gap by 1, the FIFO not empty status is raised.
+  //
+  // At this time, the logic just sent the read request to the SRAM. The data
+  // is not yet read. The `rvalid` asserts when it receives data from the
+  // SRAM.
+  //
+  // So, if the consumer reads data at the same cycle when notempty status is
+  // raised, it reads incorrect data.
+  assign r_notempty_o = rvalid_o;
 
   assign rsram_ack = r_sram_req_o && r_sram_gnt_i;
   assign rfifo_ack = rvalid_o     && rready_i;
@@ -231,10 +254,10 @@ module prim_fifo_async_sram_adapter #(
   assign w_sram_addr_o  = SramBaseAddr + SramAw'(w_wptr_v);
 
   assign w_sram_wdata_o = SramDw'(wdata_i);
-  assign w_sram_wmask_o = SramDw'(2**Width-1);
+  assign w_sram_wmask_o = SramDw'({Width{1'b1}});
 
-  logic w_unused_sram;
-  assign w_unused_sram = ^{w_sram_rvalid_i, w_sram_rdata_i, w_sram_rerror_i};
+  logic unused_w_sram;
+  assign unused_w_sram = ^{w_sram_rvalid_i, w_sram_rdata_i, w_sram_rerror_i};
 
   // SRAM Read Request
   // Request Scenario (!r_empty):
@@ -273,15 +296,20 @@ module prim_fifo_async_sram_adapter #(
   // Send SRAM request with sram read pointer.
   assign r_sram_addr_o  = SramBaseAddr + SramAw'(r_sram_rptr[0+:PtrVW]);
 
-  assign rdata_d = r_sram_rdata_i[0+:Width];
+  assign rdata_d = (r_sram_rvalid_i) ? r_sram_rdata_i[0+:Width] : Width'(0);
 
   assign rdata_o = (stored) ? rdata_q : rdata_d;
 
   logic unused_rsram;
   assign unused_rsram = ^{r_sram_rerror_i};
 
+  if (Width < SramDw) begin : g_unused_rdata
+    logic unused_rdata;
+    assign unused_rdata = ^r_sram_rdata_i[SramDw-1:Width];
+  end : g_unused_rdata
+
   // read clock domain rdata storage
-  logic store;
+  logic store_en;
 
   // Karnough Map (r_sram_rvalid_i):
   // rfifo_ack   | 0 | 1 |
@@ -290,13 +318,13 @@ module prim_fifo_async_sram_adapter #(
   //           1 | 0 | 1 |
   //
   // stored = s.r.v && XNOR(stored, rptr_inc)
-  assign store = r_sram_rvalid_i && !(stored ^ rfifo_ack);
+  assign store_en = r_sram_rvalid_i && !(stored ^ rfifo_ack);
 
   always_ff @(posedge clk_rd_i or negedge rst_rd_ni) begin
     if (!rst_rd_ni) begin
       stored <= 1'b 0;
       rdata_q <= Width'(0);
-    end else if (store) begin
+    end else if (store_en) begin
       stored <= 1'b 1;
       rdata_q <= rdata_d;
     end else if (!r_sram_rvalid_i && rfifo_ack) begin
@@ -377,10 +405,10 @@ module prim_fifo_async_sram_adapter #(
           clk_wr_i, !rst_wr_ni)
 
   `ASSERT(WptrIncrease_A,
-          w_wptr_inc |=> w_wptr_v == PtrVW'($past(w_wptr_v) + 1),
+          w_wptr_inc |=> w_wptr_v == PtrVW'($past(w_wptr_v,2) + 1),
           clk_wr_i, !rst_wr_ni)
   `ASSERT(WptrGrayOneBitAtATime_A,
-          w_wptr_inc |=> $countones(w_wptr_gray_q ^ $past(w_wptr_gray_q)) == 1,
+          w_wptr_inc |=> $countones(w_wptr_gray_q ^ $past(w_wptr_gray_q,2)) == 1,
           clk_wr_i, !rst_wr_ni)
 
   `ASSERT(NoRAckInEmpty_A, r_rptr_inc |-> !r_empty,

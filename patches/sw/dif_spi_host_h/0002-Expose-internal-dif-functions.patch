@@ -1,0 +1,28 @@
+From 3153e5dca8b9159aa3cac361554bc27fc7243dd5 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Sat, 25 Feb 2023 18:38:09 +0100
+Subject: [PATCH] Expose internal dif functions
+
+---
+ dif_spi_host.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/dif_spi_host.h b/dif_spi_host.h
+index 9438353e7..157c2c38c 100644
+--- a/dif_spi_host.h
++++ b/dif_spi_host.h
+@@ -140,6 +140,11 @@ typedef struct dif_spi_host_segment {
+ } dif_spi_host_segment_t;
+ 
+ 
++// Additionally exposed internal functions
++void dif_spi_host_reset(const dif_spi_host_t *spi_host);
++
++void dif_spi_host_enable(const dif_spi_host_t *spi_host, bool enable);
++
+ /**
+  * Configures one chip select of SPI host with runtime information.
+  *
+-- 
+2.16.5
+

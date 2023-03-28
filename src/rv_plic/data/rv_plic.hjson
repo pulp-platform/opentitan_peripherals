@@ -8,8 +8,9 @@
 #  - src:    Number of Interrupt Sources
 #  - target: Number of Targets that handle interrupt requests
 #  - prio:   Max value of interrupt priorities
+#  - module_instance_name: Module instance name.
 {
-  name: "RV_PLIC",
+  name:               "rv_plic",
   clock_primary: "clk_i",
   bus_interfaces: [
     { protocol: "reg_iface", direction: "device" }
@@ -81,7 +82,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO1",
       desc: "Interrupt Source 1 Priority",
       swaccess: "rw",
@@ -89,7 +90,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO2",
       desc: "Interrupt Source 2 Priority",
       swaccess: "rw",
@@ -97,7 +98,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO3",
       desc: "Interrupt Source 3 Priority",
       swaccess: "rw",
@@ -105,7 +106,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO4",
       desc: "Interrupt Source 4 Priority",
       swaccess: "rw",
@@ -113,7 +114,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO5",
       desc: "Interrupt Source 5 Priority",
       swaccess: "rw",
@@ -121,7 +122,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO6",
       desc: "Interrupt Source 6 Priority",
       swaccess: "rw",
@@ -129,7 +130,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO7",
       desc: "Interrupt Source 7 Priority",
       swaccess: "rw",
@@ -137,7 +138,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO8",
       desc: "Interrupt Source 8 Priority",
       swaccess: "rw",
@@ -145,7 +146,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO9",
       desc: "Interrupt Source 9 Priority",
       swaccess: "rw",
@@ -153,7 +154,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO10",
       desc: "Interrupt Source 10 Priority",
       swaccess: "rw",
@@ -161,7 +162,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO11",
       desc: "Interrupt Source 11 Priority",
       swaccess: "rw",
@@ -169,7 +170,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO12",
       desc: "Interrupt Source 12 Priority",
       swaccess: "rw",
@@ -177,7 +178,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO13",
       desc: "Interrupt Source 13 Priority",
       swaccess: "rw",
@@ -185,7 +186,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO14",
       desc: "Interrupt Source 14 Priority",
       swaccess: "rw",
@@ -193,7 +194,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO15",
       desc: "Interrupt Source 15 Priority",
       swaccess: "rw",
@@ -201,7 +202,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO16",
       desc: "Interrupt Source 16 Priority",
       swaccess: "rw",
@@ -209,7 +210,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO17",
       desc: "Interrupt Source 17 Priority",
       swaccess: "rw",
@@ -217,7 +218,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO18",
       desc: "Interrupt Source 18 Priority",
       swaccess: "rw",
@@ -225,7 +226,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO19",
       desc: "Interrupt Source 19 Priority",
       swaccess: "rw",
@@ -233,7 +234,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO20",
       desc: "Interrupt Source 20 Priority",
       swaccess: "rw",
@@ -241,7 +242,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO21",
       desc: "Interrupt Source 21 Priority",
       swaccess: "rw",
@@ -249,7 +250,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO22",
       desc: "Interrupt Source 22 Priority",
       swaccess: "rw",
@@ -257,7 +258,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO23",
       desc: "Interrupt Source 23 Priority",
       swaccess: "rw",
@@ -265,7 +266,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO24",
       desc: "Interrupt Source 24 Priority",
       swaccess: "rw",
@@ -273,7 +274,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO25",
       desc: "Interrupt Source 25 Priority",
       swaccess: "rw",
@@ -281,7 +282,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO26",
       desc: "Interrupt Source 26 Priority",
       swaccess: "rw",
@@ -289,7 +290,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO27",
       desc: "Interrupt Source 27 Priority",
       swaccess: "rw",
@@ -297,7 +298,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO28",
       desc: "Interrupt Source 28 Priority",
       swaccess: "rw",
@@ -305,7 +306,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO29",
       desc: "Interrupt Source 29 Priority",
       swaccess: "rw",
@@ -313,7 +314,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO30",
       desc: "Interrupt Source 30 Priority",
       swaccess: "rw",
@@ -321,7 +322,7 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
+    }
     { name: "PRIO31",
       desc: "Interrupt Source 31 Priority",
       swaccess: "rw",
@@ -329,8 +330,8 @@
       fields: [
         { bits: "2:0" }
       ],
-    },
-    { skipto: "0x1000" }
+    }
+    { skipto: "0x00001000" }
     { multireg: {
         name: "IP",
         desc: "Interrupt Pending",
@@ -345,19 +346,7 @@
                "excl:CsrNonInitTests:CsrExclCheck"],
       }
     },
-    { multireg: {
-        name: "LE",
-        desc: "Interrupt Source mode. 0: Level, 1: Edge-triggered",
-        count: "NumSrc",
-        cname: "RV_PLIC",
-        swaccess: "rw",
-        hwaccess: "hro",
-        fields: [
-          { bits: "0", name: "LE", desc: "L0E1" }
-        ],
-      }
-    },
-    { skipto: "8192" }
+    { skipto: "0x2000" }
     { multireg: {
         name: "IE0",
         desc: "Interrupt Enable for Target 0",
@@ -370,7 +359,7 @@
         ],
       }
     }
-    { skipto: "2097152" }
+    { skipto: "0x200000" }
     { name: "THRESHOLD0",
       desc: "Threshold of priority for Target 0",
       swaccess: "rw",
@@ -393,6 +382,7 @@
       tags: [// CC register value is related to IP
              "excl:CsrNonInitTests:CsrExclCheck"],
     }
+  { skipto: "0x4000000" }
     { name: "MSIP0",
       desc: '''msip for Hart 0.
       Write 1 to here asserts software interrupt for Hart msip_o[0], write 0 to clear.''',
@@ -404,7 +394,7 @@
         }
       ],
     }
-  { skipto: "2101248" }
+  { skipto: "0x4004000" }
   { name: "ALERT_TEST",
       desc: '''Alert Test Register.''',
       swaccess: "wo",
@@ -420,4 +410,3 @@
     }
   ],
 }
-

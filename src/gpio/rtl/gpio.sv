@@ -10,7 +10,9 @@ module gpio
   import gpio_reg_pkg::*;
 #(
   parameter type reg_req_t = logic,
-  parameter type reg_rsp_t = logic
+  parameter type reg_rsp_t = logic,
+  // This parameter instantiates 2-stage synchronizers on all GPIO inputs.
+  parameter bit GpioAsyncOn = 1
 ) (
   input clk_i,
   input rst_ni,
@@ -37,15 +39,18 @@ module gpio
   logic [31:0] cio_gpio_en_q;
 
   // possibly filter the input based upon register configuration
-
   logic [31:0] data_in_d;
-
+  localparam int unsigned CntWidth = 4;
   for (genvar i = 0 ; i < 32 ; i++) begin : gen_filter
-    prim_filter_ctr #(.Cycles(16)) filter (
+    prim_filter_ctr #(
+      .AsyncOn(GpioAsyncOn),
+      .CntWidth(CntWidth)
+    ) u_filter (
       .clk_i,
       .rst_ni,
       .enable_i(reg2hw.ctrl_en_input_filter.q[i]),
       .filter_i(cio_gpio_i[i]),
+      .thresh_i({CntWidth{1'b1}}),
       .filter_o(data_in_d[i])
     );
   end

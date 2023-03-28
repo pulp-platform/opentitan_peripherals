@@ -1,0 +1,179 @@
+From 201999b126d84b9e36a42931690b66abe22e549e Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Sun, 19 Feb 2023 13:15:35 +0100
+Subject: [PATCH] Adapt to PULP register_interface
+
+---
+ data/gpio.hjson | 35 ++---------------------------------
+ rtl/gpio.sv     | 52 ++++++++++++----------------------------------------
+ 2 files changed, 14 insertions(+), 73 deletions(-)
+
+diff --git a/data/gpio.hjson b/data/gpio.hjson
+index 0da3efc50..239ba3df6 100644
+--- a/data/gpio.hjson
++++ b/data/gpio.hjson
+@@ -3,33 +3,9 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name:               "gpio",
+-  one_line_desc:      "General-purpose I/O pin control interface for software",
+-  design_spec:        "../doc",
+-  dv_doc:             "../doc/dv",
+-  hw_checklist:       "../doc/checklist",
+-  sw_checklist:       "/sw/device/lib/dif/dif_gpio",
+-  revisions: [
+-    {
+-      version:            "1.0",
+-      life_stage:         "L2",
+-      design_stage:       "D3",
+-      verification_stage: "V3",
+-      commit_id:          "c1be7eb2b7265cd5ba6ceb026c28acf8e371151a",
+-      notes:              "",
+-    }
+-    {
+-      version:            "1.1",
+-      life_stage:         "L1",
+-      design_stage:       "D3",
+-      verification_stage: "V2",
+-      dif_stage:          "S2",
+-      commit_id:          "9a2fd04f5e1f36128c858d6a1a7b06c34681337c"
+-      notes:              ""
+-    }
+-  ]
+-  clocking: [{clock: "clk_i", reset: "rst_ni"}],
++  clock_primary: "clk_i",
+   bus_interfaces: [
+-    { protocol: "tlul", direction: "device" }
++    { protocol: "reg_iface", direction: "device" }
+   ],
+   available_inout_list: [
+     { name: "gpio",
+@@ -41,7 +17,6 @@
+     { name: "gpio",
+       width: 32,
+       desc: "raised if any of GPIO pin detects configured interrupt mode"
+-      auto_split: "true"
+     }
+   ],
+   alert_list: [
+@@ -62,11 +37,6 @@
+       expose:  "true"
+     },
+   ]
+-  countermeasures: [
+-    { name: "BUS.INTEGRITY",
+-      desc: "End-to-end bus integrity scheme."
+-    }
+-  ]
+ 
+   regwidth: "32",
+   registers: [
+@@ -177,7 +147,6 @@
+       hwqe: "true",
+       fields: [
+         { bits: "31:0",
+-          auto_split: "true"
+         }
+       ],
+     },
+diff --git a/rtl/gpio.sv b/rtl/gpio.sv
+index a906248f4..3c2b948b5 100644
+--- a/rtl/gpio.sv
++++ b/rtl/gpio.sv
+@@ -4,29 +4,26 @@
+ //
+ // General Purpose Input/Output module
+ 
+-`include "prim_assert.sv"
++`include "common_cells/assertions.svh"
+ 
+ module gpio
+   import gpio_reg_pkg::*;
+ #(
+-  parameter logic [NumAlerts-1:0] AlertAsyncOn = {NumAlerts{1'b1}},
++  parameter type reg_req_t = logic,
++  parameter type reg_rsp_t = logic,
+   // This parameter instantiates 2-stage synchronizers on all GPIO inputs.
+   parameter bit GpioAsyncOn = 1
+ ) (
+   input clk_i,
+   input rst_ni,
+ 
+-  // Bus interface
+-  input  tlul_pkg::tl_h2d_t tl_i,
+-  output tlul_pkg::tl_d2h_t tl_o,
++  // Below Register interface can be changed
++  input  reg_req_t reg_req_i,
++  output reg_rsp_t reg_rsp_o,
+ 
+   // Interrupts
+   output logic [31:0] intr_gpio_o,
+ 
+-  // Alerts
+-  input  prim_alert_pkg::alert_rx_t [NumAlerts-1:0] alert_rx_i,
+-  output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
+-
+   // GPIOs
+   input        [31:0] cio_gpio_i,
+   output logic [31:0] cio_gpio_o,
+@@ -144,42 +141,20 @@ module gpio
+                                event_intr_actlow |
+                                event_intr_acthigh;
+ 
+-  // Alerts
+-  logic [NumAlerts-1:0] alert_test, alerts;
+-  assign alert_test = {
+-    reg2hw.alert_test.q &
+-    reg2hw.alert_test.qe
+-  };
+-
+-  for (genvar i = 0; i < NumAlerts; i++) begin : gen_alert_tx
+-    prim_alert_sender #(
+-      .AsyncOn(AlertAsyncOn[i]),
+-      .IsFatal(1'b1)
+-    ) u_prim_alert_sender (
+-      .clk_i,
+-      .rst_ni,
+-      .alert_test_i  ( alert_test[i] ),
+-      .alert_req_i   ( alerts[0]     ),
+-      .alert_ack_o   (               ),
+-      .alert_state_o (               ),
+-      .alert_rx_i    ( alert_rx_i[i] ),
+-      .alert_tx_o    ( alert_tx_o[i] )
+-    );
+-  end
+-
+   // Register module
+-  gpio_reg_top u_reg (
++  gpio_reg_top #(
++    .reg_req_t (reg_req_t),
++    .reg_rsp_t (reg_rsp_t)
++  ) u_reg (
+     .clk_i,
+     .rst_ni,
+ 
+-    .tl_i,
+-    .tl_o,
++    .reg_req_i,
++    .reg_rsp_o,
+ 
+     .reg2hw,
+     .hw2reg,
+ 
+-    // SEC_CM: BUS.INTEGRITY
+-    .intg_err_o (alerts[0]),
+     .devmode_i  (1'b1)
+   );
+ 
+@@ -187,8 +162,5 @@ module gpio
+   `ASSERT_KNOWN(IntrGpioKnown, intr_gpio_o)
+   `ASSERT_KNOWN(CioGpioEnOKnown, cio_gpio_en_o)
+   `ASSERT_KNOWN(CioGpioOKnown, cio_gpio_o)
+-  `ASSERT_KNOWN(AlertsKnown_A, alert_tx_o)
+ 
+-  // Alert assertions for reg_we onehot check
+-  `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
+ endmodule
+-- 
+2.16.5
+

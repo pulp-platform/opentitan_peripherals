@@ -1,11 +1,10 @@
 // Copyright lowRISC contributors.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
-{ name: "spi_host",
+{
+  name:               "spi_host",
   clock_primary: "clk_i",
   other_clock_list: [ "clk_core_i" ],
-  reset_primary: "rst_ni",
-  other_reset_list: [ "rst_core_ni" ],
   bus_interfaces: [
     { protocol: "reg_iface", direction: "device" }
   ],
@@ -19,7 +18,6 @@
     }
   ]
   regwidth: "32",
-  scan: "true",
   param_list: [
     { name: "ByteOrder",
       desc: '''Byte order to use when transmitting or receiving data.  If ByteOrder = 0,
@@ -34,7 +32,7 @@
     { name: "NumCS",
       desc: "The number of active-low chip select (cs_n) lines to create.",
       type: "int",
-      default: "2"
+      default: "3"
     },
     { name: "TxDepth",
       desc: "The size of the Tx FIFO (in words)",
@@ -46,6 +44,11 @@
       type: "int",
       default: "64"
     },
+    { name: "CmdDepth",
+      desc: "The size of the Cmd FIFO (one segment descriptor per entry)",
+      type: "int",
+      default: "4"
+    }
   ],
   available_output_list: [
     { name:  "sck"
@@ -97,13 +100,20 @@
                    the FIFOs, the CDC's, the core state machine and the shift register.
                    In the current implementation, the CDC FIFOs are drained not reset.
                    Therefore software must confirm that both FIFO's empty before releasing
-                   clearing this bit.''',
+                   the IP from reset.''',
+          resval: "0x0"
+        },
+        { bits: "29",
+          name: "OUTPUT_EN",
+          desc: '''Enable the SPI host output buffers for the sck, csb, and sd lines.  This allows
+                   the SPI_HOST IP to connect to the same bus as other SPI controllers without
+                   interference.''',
           resval: "0x0"
         },
         { bits: "15:8",
           name: "TX_WATERMARK"
           desc: '''If !!EVENT_ENABLE.TXWM is set, the IP will send
-                   an interrupt when the depth of the RX FIFO drops below
+                   an interrupt when the depth of the TX FIFO drops below
                    TX_WATERMARK words (32b each).'''
           resval: "0"
         },
@@ -138,7 +148,7 @@
         { bits: "29",
           name: "TXFULL",
           desc: '''When high, indicates that the transmit data fifo is full.
-                   Any further writes to !!DATA will create an error interrupt.
+                   Any further writes to !!RXDATA will create an error interrupt.
                 '''
           resval: "0x0"
         },
@@ -164,7 +174,7 @@
           name: "RXFULL",
           desc: '''When high, indicates that the receive fifo is full.  Any
                    ongoing transactions will stall until firmware reads some
-                   data from !!DATA.'''
+                   data from !!RXDATA.'''
           resval: "0x0"
         },
         { bits: "24",
@@ -189,6 +199,12 @@
           name: "RXWM",
           desc: '''If high, the number of 32-bits in the RX FIFO now exceeds the
                    !!CONTROL.RX_WATERMARK entries (32b each).'''
+          resval: "0x0"
+        },
+        { bits: "19:16",
+          name: "CMDQD",
+          desc: '''Command queue depth. Indicates how many unread 32-bit words are
+                   currently in the command segment queue.''',
           resval: "0x0"
         },
         { bits: "15:8",
@@ -225,7 +241,7 @@
             name: "CPOL",
             desc: '''The polarity of the sck clock signal.  When CPOL is 0,
                      sck is low when idle, and emits high pulses.   When CPOL
-                     is low, sck is high when idle, and emits a series of low
+                     is 1, sck is high when idle, and emits a series of low
                      pulses.
                      '''
             resval: "0x0"
@@ -239,7 +255,7 @@
                      sck and are typically sampled on the trailing edge.
                      CPHA should be chosen to match the phase of the selected
                      device.  The sampling behavior is modified by the
-                     !!CONFIGOPTS_0.FULLCYC bit.
+                     !!CONFIGOPTS.FULLCYC bit.
                      ''',
             resval: "0x0"
           },
@@ -308,10 +324,11 @@
     { name: "COMMAND",
       desc: '''Command Register
 
-               Parameters specific to each command segment.  Unlike the `CONFIGOPTS` multi-register,
+               Parameters specific to each command segment.  Unlike the !!CONFIGOPTS multi-register,
                there is only one command register for controlling all attached SPI devices''',
-      swaccess: "rw",
+      swaccess: "wo",
       hwaccess: "hro",
+      hwext: "true",
       hwqe: "true",
       fields: [
         { bits: "13:12",
@@ -337,7 +354,7 @@
                    complete SPI transactions, consisting of several separate
                    segments for issuing instructions, pausing for dummy cycles,
                    and transmitting or receiving data from the device.''',
-                   resval: "0x0"
+          resval: "0x0"
         },
         { bits: "8:0",
           name: "LEN",
@@ -349,27 +366,55 @@
                    to send or received a byte will depend on !!COMMAND.SPEED.
                    For dummy segments, (!!COMMAND.DIRECTION == 0), this register
                    controls the number of dummy cycles to issue.
+                   The number of bytes (or dummy cycles) in the segment will be
+                   equal to !!COMMAND.LEN + 1.
                    ''',
           resval: "0x0"
         },
-      ]
+      ],
+      tags: [// Triggers exceptions if registers are improperly configured
+             // Exclude from RW tests
+             "excl:CsrAllTests:CsrExclWrite"]
     },
     { window: {
-        name: "DATA",
+        name: "RXDATA",
+        items: "1",
+        validbits: "32",
+        desc: '''SPI Receive Data.
+
+                 Reads from this window pull data from the RXFIFO.
+
+                 The serial order of bit transmission
+                 is chosen to match SPI flash devices. Individual bytes
+                 are always transmitted with the most significant bit first.
+                 Only four-bute reads are supported. If ByteOrder = 0,
+                 the first byte received is packed in the MSB of !!RXDATA.
+                 For some processor architectures, this could lead to shuffling
+                 of flash data as compared to how it is written in memory.
+                 In which case, choosing ByteOrder = 1 can reverse the
+                 byte-order of each data read, causing the first byte
+                 received to be packed into the LSB of !!RXDATA. (Though within
+                 each byte the most significant bit is always pulled
+                 from the bus first.)
+                 '''
+        swaccess: "ro",
+      }
+    },
+    { window: {
+        name: "TXDATA",
         items: "1",
         validbits: "32",
         byte-write: "true",
-        desc: '''SPI Transmit and Receive Data.
+        desc: '''SPI Transmit Data.
 
-                 Write data to this window to place it in the TXFIFO.
-                 Reads from this register pull data from the RXFIFO.
+                 Data written to this window is placed into the TXFIFO.
                  Byte-enables are supported for writes.
 
                  The serial order of bit transmission
                  is chosen to match SPI flash devices. Individual bytes
                  are always transmitted with the most significant bit first.
                  Multi-byte writes are also supported, and if ByteOrder = 0,
-                 the bits of !!DATA are transmitted strictly in order of
+                 the bits of !!TXDATA are transmitted strictly in order of
                  decreasing signficance (i.e. most signicant bit first).
                  For some processor architectures, this could lead to shuffling
                  of flash data as compared to how it is written in memory.
@@ -386,6 +431,7 @@
       swaccess: "rw",
       hwaccess: "hro",
       fields: [
+        # Bit 5 (Access Invalid) always triggers an error, so bit 5 is reserved.
         { bits: "4",
           name: "CSIDINVAL",
           desc: '''Invalid CSID: If this bit is set, the block sends an error interrupt whenever
@@ -402,7 +448,7 @@
         { bits: "2",
           name: "UNDERFLOW",
           desc: '''Underflow Errors: If this bit is set, the block sends an
-                   error interrupt whenever there is a read from !!DATA
+                   error interrupt whenever there is a read from !!RXDATA
                    but the RX FIFO is empty.'''
           resval: "0x1"
         },
@@ -429,6 +475,14 @@
       swaccess: "rw1c",
       hwaccess: "hrw",
       fields: [
+        { bits: "5",
+          name: "ACCESSINVAL",
+          desc: '''Indicates that TLUL attempted to write to TXDATA with no bytes enabled. Such
+                   'zero byte' writes are not supported.''',
+          resval: "0x0"
+          tags: [// Updated by the hw. Exclude from init and write-checks.
+                 "excl:CsrAllTests:CsrExclCheck"]
+        },
         { bits: "4",
           name: "CSIDINVAL",
           desc: '''Indicates a command was attempted with an invalid value for !!CSID.''',
@@ -444,13 +498,15 @@
         { bits: "2",
           name: "UNDERFLOW",
           desc: '''Indicates that firmware has attempted to read from
-                   !!DATA when the RX FIFO is empty.''',
+                   !!RXDATA when the RX FIFO is empty.''',
           resval: "0x0"
         },
         { bits: "1",
           name: "OVERFLOW",
           desc: '''Indicates that firmware has overflowed the TX FIFO'''
           resval: "0x0"
+          tags: [// Updated by the hw. Exclude from init and write-checks.
+                 "excl:CsrAllTests:CsrExclCheck"]
         },
         { bits: "0",
           name: "CMDBUSY",
