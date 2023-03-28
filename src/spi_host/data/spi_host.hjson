@@ -32,7 +32,7 @@
     { name: "NumCS",
       desc: "The number of active-low chip select (cs_n) lines to create.",
       type: "int",
-      default: "3"
+      default: "2"
     },
     { name: "TxDepth",
       desc: "The size of the Tx FIFO (in words)",
