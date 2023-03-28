@@ -38,7 +38,7 @@ otp_rv_plic: $(OTP_PLIC_OUTD)/rtl/rv_plic.sv
 $(OTP_PLIC_OUT): $(OTP_PLIC_IN)
 	rm -rf $(OTP_PLIC_OUTD)/gen
 	PYTHONPATH=$(dir $(REGTOOL)) $(IPGEN) generate -C $(OTP_PLIC_TPLD) -o $(OTP_PLIC_OUTD)/gen -c $(OTPROOT)/src/rv_plic/rv_plic.cfg.hjson
-	cp -a $(OTP_PLIC_OUTD)/gen/* $(OTP_PLIC_OUTD)/
+	cp -a --no-preserve=mode $(OTP_PLIC_OUTD)/gen/* $(OTP_PLIC_OUTD)/
 	rm -rf $(OTP_PLIC_OUTD)/gen
 
 otp_gpio: $(OTPROOT)/src/gpio/data/gpio.hjson $(REGTOOL)

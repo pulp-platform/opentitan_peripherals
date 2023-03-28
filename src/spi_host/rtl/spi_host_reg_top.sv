@@ -38,7 +38,7 @@ module spi_host_reg_top #(
   // register signals
   logic           reg_we;
   logic           reg_re;
-  logic [AW-1:0]  reg_addr;
+  logic [BlockAw-1:0]  reg_addr;
   logic [DW-1:0]  reg_wdata;
   logic [DBW-1:0] reg_be;
   logic [DW-1:0]  reg_rdata;
@@ -53,7 +53,7 @@ module spi_host_reg_top #(
   reg_rsp_t  reg_intf_rsp;
 
 
-  logic [0:0] reg_steer;
+  logic [1:0] reg_steer;
 
   reg_req_t [3-1:0] reg_intf_demux_req;
   reg_rsp_t [3-1:0] reg_intf_demux_rsp;
@@ -99,7 +99,7 @@ module spi_host_reg_top #(
 
   assign reg_we = reg_intf_req.valid & reg_intf_req.write;
   assign reg_re = reg_intf_req.valid & ~reg_intf_req.write;
-  assign reg_addr = reg_intf_req.addr;
+  assign reg_addr = reg_intf_req.addr[BlockAw-1:0];
   assign reg_wdata = reg_intf_req.wdata;
   assign reg_be = reg_intf_req.wstrb;
   assign reg_intf_rsp.rdata = reg_rdata;
