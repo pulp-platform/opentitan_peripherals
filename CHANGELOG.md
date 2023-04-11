@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## 0.3.1 - 2023-04-11
+### Added
+- Add `nonstd_regs` parameter to PLIC.
+
 ## 0.3.0 - 2023-03-28
 ### Fixed
 - Rebase all hardware to upstream and readapt.
