@@ -1,0 +1,40 @@
+From 145f6a3e85af6e03c9774735cc2dceca8e3c6518 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Tue, 11 Apr 2023 17:47:43 +0200
+Subject: [PATCH] Parameterize extension registers
+
+---
+ rv_plic.sv.tpl | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/rv_plic.sv.tpl b/rv_plic.sv.tpl
+index 9ca2c15c5..5b72eea77 100644
+--- a/rv_plic.sv.tpl
++++ b/rv_plic.sv.tpl
+@@ -129,9 +129,13 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
+   ///////////////////
+   // MSIP register //
+   ///////////////////
++% if nonstd_regs:
+ % for t in range(target):
+   assign msip_o[${t}] = reg2hw.msip${t}.q;
+ % endfor
++% else:
++  assign msip_o = '0;
++% endif
+ 
+   ////////
+   // IP //
+@@ -217,7 +221,9 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
+ 
+   // Assertions
+   `ASSERT_KNOWN(IrqKnownO_A, irq_o)
++% if nonstd_regs:
+   `ASSERT_KNOWN(MsipKnownO_A, msip_o)
++% endif
+   for (genvar k = 0; k < NumTarget; k++) begin : gen_irq_id_known
+     `ASSERT_KNOWN(IrqIdKnownO_A, irq_id_o[k])
+   end
+-- 
+2.16.5
+

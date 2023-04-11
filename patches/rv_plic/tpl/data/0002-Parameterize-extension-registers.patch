@@ -1,0 +1,58 @@
+From 492453b1cc0dbd5fc5b7d33957c14d5808348060 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Tue, 11 Apr 2023 17:46:57 +0200
+Subject: [PATCH] Parameterize extension registers
+
+---
+ rv_plic.hjson.tpl     | 6 +++---
+ rv_plic.tpldesc.hjson | 8 +++++++-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/rv_plic.hjson.tpl b/rv_plic.hjson.tpl
+index 54e8437cc..e47b7922c 100644
+--- a/rv_plic.hjson.tpl
++++ b/rv_plic.hjson.tpl
+@@ -141,8 +141,8 @@
+              "excl:CsrNonInitTests:CsrExclCheck"],
+     }
+ % endfor
+-  { skipto: "0x4000000" }
+-% for i in range(target):
++  { skipto: "${hex(0x4000000 if nonstd_regs else 0x3FFFFF8)}" }
++% for i in range(target if nonstd_regs else 1):
+     { name: "MSIP${i}",
+       desc: '''msip for Hart ${i}.
+       Write 1 to here asserts software interrupt for Hart msip_o[${i}], write 0 to clear.''',
+@@ -155,7 +155,7 @@
+       ],
+     }
+ % endfor
+-  { skipto: "0x4004000" }
++  { skipto: "${hex(0x4004000 if nonstd_regs else 0x3FFFFFC)}" }
+   { name: "ALERT_TEST",
+       desc: '''Alert Test Register.''',
+       swaccess: "wo",
+diff --git a/rv_plic.tpldesc.hjson b/rv_plic.tpldesc.hjson
+index 37ec0798c..8ecfbc790 100644
+--- a/rv_plic.tpldesc.hjson
++++ b/rv_plic.tpldesc.hjson
+@@ -23,9 +23,15 @@
+     },
+     {
+       "name": "module_instance_name",
+-      "desc": instance name in case there are multiple rv_plic instances",
++      "desc": "instance name in case there are multiple rv_plic instances",
+       "type": "string",
+       "default": "rv_plic"
+     },
++    {
++      "name": "nonstd_regs",
++      "desc": "include nonstandard (OpenTitan) MSIP and alert regs (Requires > 64 MiB address space)",
++      "type": "int",
++      "default": 1
++    },
+   ],
+ }
+-- 
+2.16.5
+

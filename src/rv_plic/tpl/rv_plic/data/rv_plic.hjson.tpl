@@ -141,8 +141,8 @@
              "excl:CsrNonInitTests:CsrExclCheck"],
     }
 % endfor
-  { skipto: "0x4000000" }
-% for i in range(target):
+  { skipto: "${hex(0x4000000 if nonstd_regs else 0x3FFFFF8)}" }
+% for i in range(target if nonstd_regs else 1):
     { name: "MSIP${i}",
       desc: '''msip for Hart ${i}.
       Write 1 to here asserts software interrupt for Hart msip_o[${i}], write 0 to clear.''',
@@ -155,7 +155,7 @@
       ],
     }
 % endfor
-  { skipto: "0x4004000" }
+  { skipto: "${hex(0x4004000 if nonstd_regs else 0x3FFFFFC)}" }
   { name: "ALERT_TEST",
       desc: '''Alert Test Register.''',
       swaccess: "wo",
