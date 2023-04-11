@@ -129,9 +129,13 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
   ///////////////////
   // MSIP register //
   ///////////////////
+% if nonstd_regs:
 % for t in range(target):
   assign msip_o[${t}] = reg2hw.msip${t}.q;
 % endfor
+% else:
+  assign msip_o = '0;
+% endif
 
   ////////
   // IP //
@@ -217,7 +221,9 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
 
   // Assertions
   `ASSERT_KNOWN(IrqKnownO_A, irq_o)
+% if nonstd_regs:
   `ASSERT_KNOWN(MsipKnownO_A, msip_o)
+% endif
   for (genvar k = 0; k < NumTarget; k++) begin : gen_irq_id_known
     `ASSERT_KNOWN(IrqIdKnownO_A, irq_id_o[k])
   end

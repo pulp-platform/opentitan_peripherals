@@ -23,9 +23,15 @@
     },
     {
       "name": "module_instance_name",
-      "desc": instance name in case there are multiple rv_plic instances",
+      "desc": "instance name in case there are multiple rv_plic instances",
       "type": "string",
       "default": "rv_plic"
+    },
+    {
+      "name": "nonstd_regs",
+      "desc": "include nonstandard (OpenTitan) MSIP and alert regs (Requires > 64 MiB address space)",
+      "type": "int",
+      "default": 1
     },
   ],
 }
