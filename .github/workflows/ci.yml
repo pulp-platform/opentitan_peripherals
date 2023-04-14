@@ -34,31 +34,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
+      - uses: pulp-platform/pulp-actions/bender-vendor-up-to-date@v2
         with:
-          python-version: 3.9
-          cache: pip
-      - name: Python Requirements
-        run: pip install -r requirements.txt
-      - name: Check vendor
-        run: make check_vendor
+          bender-version: 0.27.1
 
   check-license:
     name: Check license
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Install Python requirements
-      run: pip install -r requirements.txt
-    - name: Intall license linter
-      run: |
-        cd .github
-        git clone https://github.com/lowRISC/misc-linters.git
-    - name: Check license
-      run: |
-        echo "::add-matcher::.github/license-checker-matcher.json"
-        bash -c "set -e; .github/misc-linters/licence-checker/licence-checker.py --config .github/license-checker.hjson"
-        echo "::remove-matcher owner=license-checker-matcher::"
+      - uses: pulp-platform/pulp-actions/lint-license@v2
+        with:
+          license: |
+            Copyright (\d{4}(-\d{4})?\s)?(ETH Zurich and University of Bologna|lowRISC contributors).
+            Licensed under the Apache License, Version 2.0, see LICENSE for details.
+            SPDX-License-Identifier: Apache-2.0
+          # Exclude generated headers (no license checker support for optional lines)
+          exclude_paths: |
+            sw/include/*_regs.h
