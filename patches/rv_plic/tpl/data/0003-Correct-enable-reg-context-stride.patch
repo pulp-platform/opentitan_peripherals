@@ -1,0 +1,25 @@
+From 3bb0083b7aa345ec431c847210a0bb12739995e4 Mon Sep 17 00:00:00 2001
+From: Paul Scheffler <paulsc@iis.ee.ethz.ch>
+Date: Wed, 24 May 2023 17:48:34 +0200
+Subject: [PATCH] Correct enable reg context stride
+
+---
+ rv_plic.hjson.tpl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rv_plic.hjson.tpl b/rv_plic.hjson.tpl
+index e47b7922c..81e42a5d7 100644
+--- a/rv_plic.hjson.tpl
++++ b/rv_plic.hjson.tpl
+@@ -102,7 +102,7 @@
+       }
+     },
+ % for i in range(target):
+-    { skipto: "${"0x{:x}".format(0x00002000 + i * 0x100)}" }
++    { skipto: "${"0x{:x}".format(0x00002000 + i * 0x80)}" }
+     { multireg: {
+         name: "IE${i}",
+         desc: "Interrupt Enable for Target ${i}",
+-- 
+2.28.0
+
