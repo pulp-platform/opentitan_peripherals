@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+## 0.4.0 - 2023-05-25
+### Fixed
+- Correct upstream PLIC register layout to conform with spec.
+- Use PULP actions for CI where possible.
+
 ## 0.3.1 - 2023-04-11
 ### Added
 - Add `nonstd_regs` parameter to PLIC.
