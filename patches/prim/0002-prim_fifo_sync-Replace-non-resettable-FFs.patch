@@ -1,0 +1,41 @@
+From 66f25e870c6ed4a43627c94127ce6376580b1887 Mon Sep 17 00:00:00 2001
+From: Tim Fischer <fischeti@iis.ee.ethz.ch>
+Date: Fri, 13 Jun 2025 14:58:09 +0200
+Subject: [PATCH] prim_fifo_sync: Replace non-resettable FFs
+
+---
+ rtl/prim_fifo_sync.sv | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/rtl/prim_fifo_sync.sv b/rtl/prim_fifo_sync.sv
+index 1d786830d2..f047197888 100644
+--- a/rtl/prim_fifo_sync.sv
++++ b/rtl/prim_fifo_sync.sv
+@@ -153,16 +153,20 @@ module prim_fifo_sync #(
+     if (Depth == 1) begin : gen_depth_eq1
+       assign storage_rdata = storage[0];
+ 
+-      always_ff @(posedge clk_i)
+-        if (fifo_incr_wptr) begin
++      always_ff @(posedge clk_i or negedge rst_ni)
++        if (!rst_ni) begin
++          storage <= '0;
++        end else if (fifo_incr_wptr) begin
+           storage[0] <= wdata_i;
+         end
+     // fifo with more than one storage element
+     end else begin : gen_depth_gt1
+       assign storage_rdata = storage[fifo_rptr[PTR_WIDTH-2:0]];
+ 
+-      always_ff @(posedge clk_i)
+-        if (fifo_incr_wptr) begin
++      always_ff @(posedge clk_i or negedge rst_ni)
++        if (!rst_ni) begin
++          storage <= '0;
++        end else if (fifo_incr_wptr) begin
+           storage[fifo_wptr[PTR_WIDTH-2:0]] <= wdata_i;
+         end
+     end
+-- 
+2.42.0
+
