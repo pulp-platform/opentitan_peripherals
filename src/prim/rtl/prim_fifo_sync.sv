@@ -153,16 +153,20 @@ module prim_fifo_sync #(
     if (Depth == 1) begin : gen_depth_eq1
       assign storage_rdata = storage[0];
 
-      always_ff @(posedge clk_i)
-        if (fifo_incr_wptr) begin
+      always_ff @(posedge clk_i or negedge rst_ni)
+        if (!rst_ni) begin
+          storage <= '0;
+        end else if (fifo_incr_wptr) begin
           storage[0] <= wdata_i;
         end
     // fifo with more than one storage element
     end else begin : gen_depth_gt1
       assign storage_rdata = storage[fifo_rptr[PTR_WIDTH-2:0]];
 
-      always_ff @(posedge clk_i)
-        if (fifo_incr_wptr) begin
+      always_ff @(posedge clk_i or negedge rst_ni)
+        if (!rst_ni) begin
+          storage <= '0;
+        end else if (fifo_incr_wptr) begin
           storage[fifo_wptr[PTR_WIDTH-2:0]] <= wdata_i;
         end
     end

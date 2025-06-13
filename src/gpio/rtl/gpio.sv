@@ -5,6 +5,7 @@
 // General Purpose Input/Output module
 
 `include "common_cells/assertions.svh"
+`include "common_cells/registers.svh"
 
 module gpio
   import gpio_reg_pkg::*;
@@ -109,9 +110,7 @@ module gpio
   end
 
   logic [31:0] data_in_q;
-  always_ff @(posedge clk_i) begin
-    data_in_q <= data_in_d;
-  end
+  `FF(data_in_q, data_in_d, '0, clk_i, rst_ni)
 
   logic [31:0] event_intr_rise, event_intr_fall, event_intr_actlow, event_intr_acthigh;
   logic [31:0] event_intr_combined;
