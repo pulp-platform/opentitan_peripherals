@@ -19,8 +19,8 @@ module prim_flop_2sync #(
 
   // Note that multi-bit syncs are *almost always* a bad idea.
   for (genvar i = 0; i < Width; ++i) begin : gen_syncs
-    sync #(
-      .STAGES     (2),
+    tc_sync #(
+      .Stages     (2),
       .ResetValue (ResetValue[i])
     ) i_sync (
       .clk_i,
