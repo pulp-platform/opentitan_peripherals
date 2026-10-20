@@ -9,6 +9,23 @@ A selection of peripherals from lowRISC's [OpenTitan](https://github.com/lowRISC
 
 This repository uses Bender's `vendor` command to fully include the remote code in `src` and apply the patches included in `patches`. The IP RTL is pregenerated in its standard configuration, but can be reconfigured in the including project.
 
+## Selecting IPs
+
+Each peripheral is only included when its Bender target is set, so a project can use some of them without pulling in the others (e.g. when it has its own `gpio`):
+
+| Peripheral | Target |
+|------------|--------|
+| GPIO | `ot_gpio` |
+| I2C | `ot_i2c` |
+| RV PLIC | `ot_rv_plic` |
+| SPI host | `ot_spi_host` |
+
+```
+bender script vsim -t ot_spi_host
+```
+
+The shared primitives in `src/prim` are always included.
+
 ## Reconfiguring IPs
 
 To simplify IP reconfiguration in your project, you can include the GNU Make fragment `otp.mk` in your makefile, for example:

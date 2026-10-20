@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- Gate each peripheral behind a Bender target (`ot_gpio`, `ot_i2c`, `ot_rv_plic`, `ot_spi_host`). **Breaking:** dependent projects must now set the targets of the peripherals they use.
 
 ## 0.4.0 - 2023-05-25
 ### Fixed

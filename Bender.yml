@@ -106,35 +106,56 @@ sources:
   # Level 2
   - src/prim/rtl/prim_fifo_async.sv
   ### Peripheral sources ###
-  # Level 0 (generated, see README for regeneration)
-  - src/gpio/rtl/gpio_reg_pkg.sv
-  - src/i2c/rtl/i2c_reg_pkg.sv
-  - src/rv_plic/rtl/rv_plic_reg_pkg.sv
-  - src/spi_host/rtl/spi_host_reg_pkg.sv
-  # Level 1 (generated, see README for regeneration)
-  - src/gpio/rtl/gpio_reg_top.sv
-  - src/i2c/rtl/i2c_reg_top.sv
-  - src/rv_plic/rtl/rv_plic_reg_top.sv
-  - src/spi_host/rtl/spi_host_reg_top.sv
-  # Level 2
-  - src/i2c/rtl/i2c_pkg.sv
-  # Level 3
-  - src/i2c/rtl/i2c_fsm.sv
-  - src/rv_plic/rtl/rv_plic_gateway.sv
-  - src/spi_host/rtl/spi_host_byte_merge.sv
-  - src/spi_host/rtl/spi_host_byte_select.sv
-  - src/spi_host/rtl/spi_host_cmd_pkg.sv
-  - src/spi_host/rtl/spi_host_command_queue.sv
-  - src/spi_host/rtl/spi_host_fsm.sv
-  - src/spi_host/rtl/spi_host_window.sv
-  - src/spi_host/rtl/spi_host_data_fifos.sv
-  - src/spi_host/rtl/spi_host_shift_register.sv
-  # Level 4
-  - src/i2c/rtl/i2c_core.sv
-  - src/rv_plic/rtl/rv_plic_target.sv
-  - src/spi_host/rtl/spi_host_core.sv
-  # Level 5
-  - src/gpio/rtl/gpio.sv
-  - src/i2c/rtl/i2c.sv
-  - src/spi_host/rtl/spi_host.sv
-  - src/rv_plic/rtl/rv_plic.sv
+  # Each peripheral is only included when its target is set (e.g. `-t ot_spi_host`).
+  - target: ot_gpio
+    files:
+      # Level 0 (generated, see README for regeneration)
+      - src/gpio/rtl/gpio_reg_pkg.sv
+      # Level 1 (generated, see README for regeneration)
+      - src/gpio/rtl/gpio_reg_top.sv
+      # Level 2
+      - src/gpio/rtl/gpio.sv
+  - target: ot_i2c
+    files:
+      # Level 0 (generated, see README for regeneration)
+      - src/i2c/rtl/i2c_reg_pkg.sv
+      # Level 1 (generated, see README for regeneration)
+      - src/i2c/rtl/i2c_reg_top.sv
+      # Level 2
+      - src/i2c/rtl/i2c_pkg.sv
+      # Level 3
+      - src/i2c/rtl/i2c_fsm.sv
+      # Level 4
+      - src/i2c/rtl/i2c_core.sv
+      # Level 5
+      - src/i2c/rtl/i2c.sv
+  - target: ot_rv_plic
+    files:
+      # Level 0 (generated, see README for regeneration)
+      - src/rv_plic/rtl/rv_plic_reg_pkg.sv
+      # Level 1 (generated, see README for regeneration)
+      - src/rv_plic/rtl/rv_plic_reg_top.sv
+      # Level 2
+      - src/rv_plic/rtl/rv_plic_gateway.sv
+      - src/rv_plic/rtl/rv_plic_target.sv
+      # Level 3
+      - src/rv_plic/rtl/rv_plic.sv
+  - target: ot_spi_host
+    files:
+      # Level 0 (generated, see README for regeneration)
+      - src/spi_host/rtl/spi_host_reg_pkg.sv
+      # Level 1 (generated, see README for regeneration)
+      - src/spi_host/rtl/spi_host_reg_top.sv
+      # Level 2
+      - src/spi_host/rtl/spi_host_byte_merge.sv
+      - src/spi_host/rtl/spi_host_byte_select.sv
+      - src/spi_host/rtl/spi_host_cmd_pkg.sv
+      - src/spi_host/rtl/spi_host_command_queue.sv
+      - src/spi_host/rtl/spi_host_fsm.sv
+      - src/spi_host/rtl/spi_host_window.sv
+      - src/spi_host/rtl/spi_host_data_fifos.sv
+      - src/spi_host/rtl/spi_host_shift_register.sv
+      # Level 3
+      - src/spi_host/rtl/spi_host_core.sv
+      # Level 4
+      - src/spi_host/rtl/spi_host.sv
