@@ -558,6 +558,28 @@ module spi_host_fsm
     end
   end : gen_csb_gen
 
+  // When 'cmd_wr_en_q' deasserts, we need to stretch the enable used
+  // to drive sd_en_o[0] until the end of the bit period. This is because
+  // 'cmd_wr_en_q' can change up to 1/2 cycle before the end of the period
+  // (depending on cpol/cpha).
+  // The signal 'last_bit' is active in the final period, so use that to start
+  // stretching the enable, and 'byte_ending' marks the period end.
+  logic cmd_wr_en_last_bit;
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      cmd_wr_en_last_bit <= 1'b0;
+    end else if (sw_rst_i || &csb_o) begin
+      cmd_wr_en_last_bit <= 1'b0;
+    end else if (!stall && byte_ending) begin
+      cmd_wr_en_last_bit <= 1'b0;
+    end else if (!stall && cmd_wr_en_q && last_bit &&
+                 ((state_q == InternalClkLow) || (state_q == InternalClkHigh))) begin
+      cmd_wr_en_last_bit <= 1'b1;
+    end else begin // Stretching..
+      cmd_wr_en_last_bit <= cmd_wr_en_last_bit;
+    end
+  end
+
   assign csb_o = csb_q;
 
   always_comb begin
@@ -566,8 +588,8 @@ module spi_host_fsm
     end else begin
       unique case (speed_o)
         Standard: begin
-          // TODO @paulsc: We fixed this from 1'b1 before; is this fix still valid?
-          sd_en_o[0]   = cmd_wr_en_q;
+          // Keep the output enabled through the final transmitted bit.
+          sd_en_o[0]   = cmd_wr_en_q | cmd_wr_en_last_bit;
           sd_en_o[1]   = 1'b0;
           sd_en_o[3:2] = 2'b00;
         end
