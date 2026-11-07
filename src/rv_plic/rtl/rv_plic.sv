@@ -81,7 +81,9 @@ module rv_plic import rv_plic_reg_pkg::*; #(
   always_comb begin
     complete = '0;
     for (int i = 0 ; i < NumTarget ; i++) begin
-      if (complete_we[i]) complete[complete_id[i]] = 1'b1;
+      if (complete_we[i] && (complete_id[i] != '0) && (int'(complete_id[i]) < NumSrc)) begin
+        if (ie[i][complete_id[i]]) complete[complete_id[i]] = 1'b1;
+      end
     end
   end
 
