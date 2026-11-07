@@ -70,12 +70,13 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
   logic [PRIOW-1:0] threshold [NumTarget];
 
   // Glue logic between ${module_instance_name}_reg_top and others
-  assign cc_id = irq_id_o;
+  assign cc_id = claim_id;
 
   always_comb begin
     claim = '0;
     for (int i = 0 ; i < NumTarget ; i++) begin
-      if (claim_re[i]) claim[claim_id[i]] = 1'b1;
+      if (claim_re[i] && (claim_id[i] != '0) && (int'(claim_id[i]) < NumSrc))
+        claim[claim_id[i]] = 1'b1;
     end
   end
   always_comb begin
@@ -120,7 +121,6 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
   /////////////////
 % for t in range(target):
   assign claim_re[${t}]    = reg2hw.cc${t}.re;
-  assign claim_id[${t}]    = irq_id_o[${t}];
   assign complete_we[${t}] = reg2hw.cc${t}.qe;
   assign complete_id[${t}] = reg2hw.cc${t}.q;
   assign hw2reg.cc${t}.d   = cc_id[${t}];
@@ -193,7 +193,8 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
       .threshold_i (threshold[i]),
 
       .irq_o       (irq_o[i]),
-      .irq_id_o    (irq_id_o[i])
+      .irq_id_o    (irq_id_o[i]),
+      .claim_id_o  (claim_id[i])
 
     );
   end
