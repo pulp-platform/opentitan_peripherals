@@ -12,7 +12,7 @@ Related upstream discussion: [lowRISC/opentitan#31690](https://github.com/lowRIS
 | Profile | Checks | Original errors | Patched errors |
 | --- | --- | --- | --- |
 | disabled_complete | 745 | 54 | 0 |
-| completion_regression | 223045 | Not run | 0 |
+| completion_regression | 223045 | 7251 | 0 |
 
 The regression exercised 176 vectors and finished at 155.18 us.
 It includes all 57 legal sources, both contexts, enabled peer completion,
@@ -61,7 +61,7 @@ for module in rv_plic_reg_pkg rv_plic_gateway rv_plic_target rv_plic_reg_top rv_
 done
 timeout 180 vcs -full64 -sverilog -timescale=1ns/1ps +lint=all \
   "+incdir+$CELLS/include" "+incdir+$REGIF/include" "${DEPS[@]}" \
-  "$ROOT/test/tb_plic_contract.sv" -top tb_e_plic_unit -o simv -l compile.log
+  "$ROOT/test/tb_plic_contract.sv" -top tb_plic_contract -o simv -l compile.log
 ```
 
 Run the listed profiles in distinct subdirectories:
@@ -69,13 +69,13 @@ Run the listed profiles in distinct subdirectories:
 ```bash
 for profile in disabled_complete completion_regression; do
   mkdir "$profile"
-  (cd "$profile"; timeout 90 ../simv "+E_PLIC_PROFILE=$profile" -l run.log)
+  (cd "$profile"; timeout 90 ../simv "+PLIC_PROFILE=$profile" -l run.log)
 done
 ```
 
 For the original comparison, use an unchanged checkout of the stated base,
 the same test source and dependencies, and a separate generated/output directory.
-Every run must produce exactly one `E_PLIC_DONE` with the listed counts.
+Every run must produce exactly one `PLIC_DONE` with the listed counts.
 Candidate runs must have zero errors, no assertion failures, and normal `$finish`.
 The originals must produce the specified errors and the functional-failure marker.
 Do not classify by process exit code: VCS can return zero after `$fatal`.

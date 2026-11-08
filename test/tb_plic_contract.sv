@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Finite real-module PLIC test with an independent transaction reference.
 // The reference model uses bus transactions and source inputs, not DUT winners.
-module tb_e_plic_unit;
+module tb_plic_contract;
   timeunit 1ns;
   timeprecision 1ps;
 
@@ -111,7 +111,7 @@ module tb_e_plic_unit;
       errors++;
       phase_errors[phase]++;
       if (phase_errors[phase] == 1 || errors <= 24)
-        $display("E_PLIC_ERROR phase=%s label=%s cycle=%0d expected=%016h actual=%016h",
+        $display("PLIC_ERROR phase=%s label=%s cycle=%0d expected=%016h actual=%016h",
                  phase_name(phase), label, cycles, expected, actual);
     end
   endtask
@@ -369,7 +369,7 @@ module tb_e_plic_unit;
   endtask
 
   task automatic report_phase(input int which);
-    $display("E_PLIC_PHASE name=%s vectors=%0d checks=%0d errors=%0d",
+    $display("PLIC_PHASE name=%s vectors=%0d checks=%0d errors=%0d",
              phase_name(which), phase_vectors[which], phase_checks[which], phase_errors[which]);
   endtask
 
@@ -659,8 +659,8 @@ module tb_e_plic_unit;
     for (int p=0; p<NPHASE; p++) begin
       phase_checks[p]=0; phase_errors[p]=0; phase_vectors[p]=0;
     end
-    if ($value$plusargs("E_PLIC_PROFILE=%s",profile)) begin end
-    $display("E_PLIC_START profile=%s sources=58 targets=2 priority_max=7 level_only=1",profile);
+    if ($value$plusargs("PLIC_PROFILE=%s",profile)) begin end
+    $display("PLIC_START profile=%s sources=58 targets=2 priority_max=7 level_only=1",profile);
     case (profile)
       "full": begin
         run_probes(); single_matrix(); pair_matrix(); all_source_matrix(); threshold_matrix(); context_matrix();
@@ -678,7 +678,7 @@ module tb_e_plic_unit;
       "disabled_complete": probe_disabled_complete();
       "back_to_back_claim": probe_back_to_back_claim();
       "priority_zero": probe_priority_zero();
-      default: $fatal(1,"Unknown E_PLIC_PROFILE: %s",profile);
+      default: $fatal(1,"Unknown PLIC_PROFILE: %s",profile);
     endcase
     reset_dut(P_IDLE);
     wait_cycles(2);
@@ -686,11 +686,11 @@ module tb_e_plic_unit;
     finished=1;
     for (int p=0; p<NPHASE; p++)
       if (phase_vectors[p] != 0)
-        $display("E_PLIC_TOTAL phase=%s vectors=%0d checks=%0d errors=%0d",
+        $display("PLIC_TOTAL phase=%s vectors=%0d checks=%0d errors=%0d",
                  phase_name(p),phase_vectors[p],phase_checks[p],phase_errors[p]);
-    $display("E_PLIC_DONE profile=%s vectors=%0d checks=%0d errors=%0d probe_failures=%0d cycles=%0d",
+    $display("PLIC_DONE profile=%s vectors=%0d checks=%0d errors=%0d probe_failures=%0d cycles=%0d",
              profile,vectors,checks,errors,probe_failures,cycles);
-    if (errors != 0) $fatal(1,"E PLIC functional checks failed");
+    if (errors != 0) $fatal(1,"PLIC functional checks failed");
     $finish;
   end
 
