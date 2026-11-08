@@ -366,7 +366,7 @@ module tb_spi_tx_enable;
     endcase
     reset_core();
     $display("[SPI_TX_ENABLE_DONE] kind=unit profile=%s cases=%0d transfers=%0d checks=%0d errors=%0d mmio=%0d",profile,cases,transfers,checks,errors,mmio_count);
-    if(errors)$fatal(1,"E_SPI functional errors");
+    if(errors)$fatal(1,"SPI_TX_ENABLE functional errors");
     $finish;
   end
   initial begin #5ms;$fatal(1,"SPI_HDL_LIMIT");end
