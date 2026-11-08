@@ -46,8 +46,9 @@ All 18 VCS W-2024.09-SP1 runs reach the single DONE. Nonzero original/author
 error totals trigger the expected TB fatal. All six final-candidate profiles
 finish normally within the finite HDL and wall limits.
 The final candidate has 102 cases / 15764 checks / zero errors.
-All three builds have zero VCS lint diagnostics. Functional assertions remain
-enabled. Require zero test and assertion errors; simv process return alone is
+All three builds have the same VCS lint categories and counts: NS 32, UI 4,
+ULCO 11, WMIA-L 21, SVA-CE 31, SVA-DIU 31, and CAWM-L 6.
+There are zero Warning diagnostics. Functional assertions remain enabled. Require zero test and assertion errors; simv process return alone is
 not a pass. Each profile has a 5 ms HDL deadline and 60 s wall limit.
 Unknown, missing or deadline output is a failure.
 
@@ -91,7 +92,7 @@ timeout 180 vcs -full64 -sverilog -timescale=1ns/1ps +lint=all \
   "$OT/test/tb_spi_tx_enable.sv" -top tb_spi_tx_enable -o simv -l compile.log
 for profile in mode fifo event error handoff reset_hold; do
   mkdir "$profile"
-  (cd "$profile"; timeout 60 ../simv "+E_SPI_PROFILE=$profile" -l run.log)
+  (cd "$profile"; timeout 60 ../simv "+SPI_TX_ENABLE_PROFILE=$profile" -l run.log)
 done
 ```
 

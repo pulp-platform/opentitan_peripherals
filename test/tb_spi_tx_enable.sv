@@ -41,14 +41,14 @@ module tb_spi_tx_enable;
     return byte'('ha5+37*i+11*case_id);
   endfunction
   task automatic fail(input string reason);
-    errors++;$error("[E_SPI_ERROR] case=%0d cycle=%0d %s",case_id,cycle,reason);
+    errors++;$error("[SPI_TX_ENABLE_ERROR] case=%0d cycle=%0d %s",case_id,cycle,reason);
   endtask
   task automatic check(input string name,input logic [31:0] actual,
                        input logic [31:0] gold,input logic [31:0] mask='1);
     checks++;
-    $display("[E_SPI_CHECK] case=%0d name=%s actual=%08h mask=%08h",case_id,name,actual,mask);
+    $display("[SPI_TX_ENABLE_CHECK] case=%0d name=%s actual=%08h mask=%08h",case_id,name,actual,mask);
     if($isunknown(actual&mask))begin
-      $display("[E_SPI_UNKNOWN] case=%0d name=%s",case_id,name);wait(1'b0);
+      $display("[SPI_TX_ENABLE_UNKNOWN] case=%0d name=%s",case_id,name);wait(1'b0);
     end
     if((actual&mask)!=(gold&mask))fail($sformatf("%s actual=%08h expected=%08h mask=%08h",name,actual,gold,mask));
   endtask
@@ -58,7 +58,7 @@ module tb_spi_tx_enable;
     @(negedge clk);req='0;req.valid=1;req.write=write;req.addr=addr;req.wdata=data;req.wstrb=be;
     do @(posedge clk);while(rsp.ready!==1'b1);
     result=rsp.rdata;mmio_count++;
-    $display("[E_SPI_MMIO] case=%0d cycle=%0d time_ps=%0d addr=%012h write=%b wdata=%08h wstrb=%h rdata=%08h error=%b",
+    $display("[SPI_TX_ENABLE_MMIO] case=%0d cycle=%0d time_ps=%0d addr=%012h write=%b wdata=%08h wstrb=%h rdata=%08h error=%b",
       case_id,cycle,ps(),req.addr,req.write,req.wdata,req.wstrb,rsp.rdata,rsp.error);
     if(rsp.error!==1'b0)fail("unexpected register-interface error");
     @(negedge clk);req='0;
@@ -91,14 +91,14 @@ module tb_spi_tx_enable;
   task automatic begin_case(input string kind,input int unsigned ordinal,
                             input int unsigned variant=0,input int unsigned mask_value=0);
     case_id=ordinal;cases++;
-    $display("[E_SPI_CASE] id=%0d profile=%s kind=%s variant=%0d mask=%0d",case_id,profile,kind,variant,mask_value);
+    $display("[SPI_TX_ENABLE_CASE] id=%0d profile=%s kind=%s variant=%0d mask=%0d",case_id,profile,kind,variant,mask_value);
     reset_core();
   endtask
   task automatic arm_transfer(input int unsigned bytes_value,input int unsigned dir_value);
     transfer_enabled=0;nbytes=bytes_value;direction=dir_value;
     sampled_bits=0;edge_count=0;transfers++;sd_i=0;
     previous_sck=sck;transfer_enabled=1;
-    $display("[E_SPI_TRANSFER] case=%0d ordinal=%0d mode=%0d div=%0d cs=%0d bytes=%0d direction=%0d",
+    $display("[SPI_TX_ENABLE_TRANSFER] case=%0d ordinal=%0d mode=%0d div=%0d cs=%0d bytes=%0d direction=%0d",
       case_id,transfers,spi_mode,spi_div,selected_cs,nbytes,direction);
   endtask
   task automatic put_tx(input int unsigned start_index,input int unsigned count);
@@ -131,7 +131,7 @@ module tb_spi_tx_enable;
     wait(csb===3'b111);
     status_wait(32'h40000000,0);rd(ERROR_STATUS,s);check("normal_error_status",s,0,'h3f);
     transfer_enabled=0;
-    $display("[E_SPI_TRANSFER_DONE] case=%0d ordinal=%0d sample_bits=%0d edges=%0d",case_id,transfers,sampled_bits,edge_count);
+    $display("[SPI_TX_ENABLE_TRANSFER_DONE] case=%0d ordinal=%0d sample_bits=%0d edges=%0d",case_id,transfers,sampled_bits,edge_count);
   endtask
   task automatic normal_transfer(input int unsigned count,input int unsigned dir_value);
     arm_transfer(count,dir_value);
@@ -160,7 +160,7 @@ module tb_spi_tx_enable;
     int unsigned b;
     if(rst_n && transfer_enabled && csb!==3'b111)begin
       edge_count++;leading=(sck!=logic'(spi_mode>>1));sampling=(spi_mode&1)?!leading:leading;
-      $display("[E_SPI_PIN] case=%0d time_ps=%0d sck=%b cs=%b out=%h oe=%h in=%h sampling=%b bit=%0d",
+      $display("[SPI_TX_ENABLE_PIN] case=%0d time_ps=%0d sck=%b cs=%b out=%h oe=%h in=%h sampling=%b bit=%0d",
         case_id,ps(),sck,csb,sd_o,sd_en,sd_i,sampling,sampled_bits);
       if(sampling)begin
         #1ps; // Observe settled output enables after the clock-edge NBA updates.
@@ -187,12 +187,12 @@ module tb_spi_tx_enable;
   // Preserve delta-cycle updates; the independent checker coalesces timestamps.
   always @(rst_n or sck or sck_en or csb or csb_en or sd_o or sd_en or sd_i)
     if(rst_n)
-      $display("[E_SPI_PIN_ALL] case=%0d cycle=%0d time_ps=%0d sck=%b sck_en=%b cs=%b cs_en=%b out=%h oe=%h in=%h",
+      $display("[SPI_TX_ENABLE_PIN_ALL] case=%0d cycle=%0d time_ps=%0d sck=%b sck_en=%b cs=%b cs_en=%b out=%h oe=%h in=%h",
         case_id,cycle,ps(),sck,sck_en,csb,csb_en,sd_o,sd_en,sd_i);
   always @(posedge clk)begin
     cycle++;
     if(rst_n && transfer_enabled && (dut.tx_stall || dut.rx_stall))
-      $display("[E_SPI_STALL] case=%0d cycle=%0d time_ps=%0d tx=%b rx=%b sck=%b bits=%0d",case_id,cycle,ps(),dut.tx_stall,dut.rx_stall,sck,sampled_bits);
+      $display("[SPI_TX_ENABLE_STALL] case=%0d cycle=%0d time_ps=%0d tx=%b rx=%b sck=%b bits=%0d",case_id,cycle,ps(),dut.tx_stall,dut.rx_stall,sck,sampled_bits);
   end
 
   task automatic mode_profile;
@@ -221,9 +221,9 @@ module tb_spi_tx_enable;
         if(variant==1)begin
           wait(sampled_bits>=8);status_wait(32'h40000000,0);
           check("gap_selected_cs",{29'd0,csb},32'(7^(1<<(mode_value%3))));
-          $display("[E_SPI_HANDOFF_GAP] case=%0d event=begin cycle=%0d time_ps=%0d sck=%b cs=%b",case_id,cycle,ps(),sck,csb);
+          $display("[SPI_TX_ENABLE_HANDOFF_GAP] case=%0d event=begin cycle=%0d time_ps=%0d sck=%b cs=%b",case_id,cycle,ps(),sck,csb);
           repeat(32)@(negedge clk);
-          $display("[E_SPI_HANDOFF_GAP] case=%0d event=end cycle=%0d time_ps=%0d sck=%b cs=%b",case_id,cycle,ps(),sck,csb);
+          $display("[SPI_TX_ENABLE_HANDOFF_GAP] case=%0d event=end cycle=%0d time_ps=%0d sck=%b cs=%b",case_id,cycle,ps(),sck,csb);
           wr(COMMAND,(1<<12));
         end
         do rd(STATUS,value);while(value[15:8]==0);
@@ -235,7 +235,7 @@ module tb_spi_tx_enable;
   // Finite interruption of a last-bit TX hold, timed only from public pins.
   // The FF below is observed passively; it never selects the stimulus time.
   task automatic reset_hold_observation(input string stage);
-    $display("[E_SPI_RESET_HOLD] case=%0d ordinal=%0d stage=%s cycle=%0d time_ps=%0d sck=%b cs=%b oe=%h out=%h sw_rst=%b output_en=%b irq_error=%b irq_event=%b",
+    $display("[SPI_TX_ENABLE_RESET_HOLD] case=%0d ordinal=%0d stage=%s cycle=%0d time_ps=%0d sck=%b cs=%b oe=%h out=%h sw_rst=%b output_en=%b irq_error=%b irq_event=%b",
       case_id,transfers,stage,cycle,ps(),sck,csb,sd_en,sd_o,
       dut.sw_rst,dut.output_en,irq_error,irq_event);
   endtask
@@ -254,7 +254,7 @@ module tb_spi_tx_enable;
       // Keep OUTPUT_EN=1: SD disable must follow reset/CS, not output gating.
       wr(CONTROL,32'he0000000);
       transfer_enabled=0;
-      $display("[E_SPI_ABORT] case=%0d ordinal=%0d cycle=%0d time_ps=%0d reason=software_reset sample_bits=%0d edges=%0d",
+      $display("[SPI_TX_ENABLE_ABORT] case=%0d ordinal=%0d cycle=%0d time_ps=%0d reason=software_reset sample_bits=%0d edges=%0d",
         case_id,transfers,cycle,ps(),sampled_bits,edge_count);
       repeat(4)@(negedge clk);#1ps;
       reset_hold_observation("after_reset");
@@ -356,16 +356,16 @@ module tb_spi_tx_enable;
     end
   endtask
   initial begin
-    void'($value$plusargs("E_SPI_PROFILE=%s",profile));
-    $display("[E_SPI_PROFILE] kind=unit profile=%s version=1",profile);
+    void'($value$plusargs("SPI_TX_ENABLE_PROFILE=%s",profile));
+    $display("[SPI_TX_ENABLE_PROFILE] kind=unit profile=%s version=1",profile);
     #100ns;@(negedge clk);rst_n=1;repeat(16)@(posedge clk);
     case(profile)
       "mode":mode_profile();"fifo":fifo_profile();"event":event_profile();"error":error_profile();"handoff":handoff_profile();
       "reset_hold":reset_hold_profile();
-      default:$fatal(1,"Unsupported E_SPI_PROFILE %s",profile);
+      default:$fatal(1,"Unsupported SPI_TX_ENABLE_PROFILE %s",profile);
     endcase
     reset_core();
-    $display("[E_SPI_DONE] kind=unit profile=%s cases=%0d transfers=%0d checks=%0d errors=%0d mmio=%0d",profile,cases,transfers,checks,errors,mmio_count);
+    $display("[SPI_TX_ENABLE_DONE] kind=unit profile=%s cases=%0d transfers=%0d checks=%0d errors=%0d mmio=%0d",profile,cases,transfers,checks,errors,mmio_count);
     if(errors)$fatal(1,"E_SPI functional errors");
     $finish;
   end
