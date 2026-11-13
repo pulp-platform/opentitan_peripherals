@@ -1,4 +1,5 @@
 // Copyright 2026 CheshireAra contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Finite real-module PLIC test with an independent transaction reference.
 // The reference model uses bus transactions and source inputs, not DUT winners.
