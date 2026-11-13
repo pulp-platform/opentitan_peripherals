@@ -1,4 +1,5 @@
 // Copyright 2026 CheshireAra contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Test-only standard-SPI endpoint and register-interface driver.
 // DUT: PULP opentitan_peripherals cd3153de2783abd3d03d0595e6c4b32413c62f14.
