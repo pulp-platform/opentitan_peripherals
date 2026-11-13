@@ -55,11 +55,17 @@ static uint8_t plic_irq_bit_index(dif_rv_plic_irq_id_t irq) {
  * Get the address of the first target N interrupt enable register (IEN0).
  */
 static ptrdiff_t plic_irq_enable_base_for_target(dif_rv_plic_target_t target) {
-  ptrdiff_t range = RV_PLIC_IE0_MULTIREG_COUNT * sizeof(uint32_t);
+  ptrdiff_t range = 0;
 #if RV_PLIC_IE0_MULTIREG_COUNT == 1
   uint32_t reg_offset = RV_PLIC_IE0_REG_OFFSET;
+#if RV_PLIC_PARAM_NUM_TARGET > 1
+  range = RV_PLIC_IE1_REG_OFFSET - RV_PLIC_IE0_REG_OFFSET;
+#endif
 #else
   uint32_t reg_offset = RV_PLIC_IE0_0_REG_OFFSET;
+#if RV_PLIC_PARAM_NUM_TARGET > 1
+  range = RV_PLIC_IE1_0_REG_OFFSET - RV_PLIC_IE0_0_REG_OFFSET;
+#endif
 #endif
   return reg_offset + (range * target);
 }
@@ -76,7 +82,13 @@ static ptrdiff_t plic_software_irq_base_for_target(
  * Get the address of the first target N threshold register (THRESHOLDN).
  */
 static ptrdiff_t plic_threshold_base_for_target(dif_rv_plic_target_t target) {
-  return RV_PLIC_THRESHOLD0_REG_OFFSET + (target * sizeof(uint32_t));
+#if RV_PLIC_PARAM_NUM_TARGET > 1
+  return RV_PLIC_THRESHOLD0_REG_OFFSET +
+         (target * (RV_PLIC_THRESHOLD1_REG_OFFSET - RV_PLIC_THRESHOLD0_REG_OFFSET));
+#else
+  (void)target;
+  return RV_PLIC_THRESHOLD0_REG_OFFSET;
+#endif
 }
 
 /**
@@ -84,7 +96,13 @@ static ptrdiff_t plic_threshold_base_for_target(dif_rv_plic_target_t target) {
  */
 static ptrdiff_t plic_claim_complete_base_for_target(
     dif_rv_plic_target_t target) {
-  return RV_PLIC_CC0_REG_OFFSET + (target * sizeof(uint32_t));
+#if RV_PLIC_PARAM_NUM_TARGET > 1
+  return RV_PLIC_CC0_REG_OFFSET +
+         (target * (RV_PLIC_CC1_REG_OFFSET - RV_PLIC_CC0_REG_OFFSET));
+#else
+  (void)target;
+  return RV_PLIC_CC0_REG_OFFSET;
+#endif
 }
 
 /**
