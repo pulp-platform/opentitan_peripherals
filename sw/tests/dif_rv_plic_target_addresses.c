@@ -1,4 +1,5 @@
 // Copyright 2026 CheshireAra contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Host-only address controls for the real PLIC DIF compiled with MOCK_MMIO.
 // The expected addresses come from generated register macros, not DIF helpers.
