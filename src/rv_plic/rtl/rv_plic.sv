@@ -70,12 +70,13 @@ module rv_plic import rv_plic_reg_pkg::*; #(
   logic [PRIOW-1:0] threshold [NumTarget];
 
   // Glue logic between rv_plic_reg_top and others
-  assign cc_id = irq_id_o;
+  assign cc_id = claim_id;
 
   always_comb begin
     claim = '0;
     for (int i = 0 ; i < NumTarget ; i++) begin
-      if (claim_re[i]) claim[claim_id[i]] = 1'b1;
+      if (claim_re[i] && (claim_id[i] != '0) && (int'(claim_id[i]) < NumSrc))
+        claim[claim_id[i]] = 1'b1;
     end
   end
   always_comb begin
@@ -144,7 +145,6 @@ module rv_plic import rv_plic_reg_pkg::*; #(
   // CC register //
   /////////////////
   assign claim_re[0]    = reg2hw.cc0.re;
-  assign claim_id[0]    = irq_id_o[0];
   assign complete_we[0] = reg2hw.cc0.qe;
   assign complete_id[0] = reg2hw.cc0.q;
   assign hw2reg.cc0.d   = cc_id[0];
@@ -210,7 +210,8 @@ module rv_plic import rv_plic_reg_pkg::*; #(
       .threshold_i (threshold[i]),
 
       .irq_o       (irq_o[i]),
-      .irq_id_o    (irq_id_o[i])
+      .irq_id_o    (irq_id_o[i]),
+      .claim_id_o  (claim_id[i])
 
     );
   end

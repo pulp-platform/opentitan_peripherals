@@ -32,7 +32,8 @@ module ${module_instance_name}_target #(
   input               [PrioWidth-1:0] threshold_i,
 
   output logic                irq_o,
-  output logic [SrcWidth-1:0] irq_id_o
+  output logic [SrcWidth-1:0] irq_id_o,
+  output logic [SrcWidth-1:0] claim_id_o
 );
 
   // Find maximum value and index using a binary tree implementation.
@@ -57,6 +58,8 @@ module ${module_instance_name}_target #(
 
   assign irq_d    = (max_value > threshold_i) ? max_valid : 1'b0;
   assign irq_id_d = (max_valid) ? max_idx : '0;
+  // Priority zero disables a source; threshold gates only notification.
+  assign claim_id_o = (max_valid && (max_value != '0)) ? max_idx : '0;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin : gen_regs
     if (!rst_ni) begin
